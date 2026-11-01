@@ -1,0 +1,1277 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="crumb">
+    <a href="/">Missions</a> / {{s.title}}
+</div>
+
+<div class="missionhead">
+    <div>
+        <div class="eyebrow">MISSION 01 · CUSTOMER ENGAGEMENT</div>
+        <h1>{{s.title}}</h1>
+        <p>Your role: solutions architect. Understand the business before proposing technology.</p>
+    </div>
+    <span class="pill">IN PROGRESS</span>
+</div>
+
+<div class="workspace">
+
+    <section class="panel">
+
+        <div class="eyebrow">01 / DISCOVERY</div>
+        <h2>Customer briefing</h2>
+
+        <div class="customer">
+            <span class="plus">✚</span>
+            <div>
+                <b>Wellness Medical Group</b>
+                <small>Multi-site healthcare provider</small>
+            </div>
+            <span class="avatar">WT</span>
+        </div>
+
+        <p>{{s.brief}}</p>
+
+        <h3>Business outcomes</h3>
+
+        <ul>
+            {% for g in s.goals %}
+                <li>{{g}}</li>
+            {% endfor %}
+        </ul>
+
+        <hr>
+
+        <div class="eyebrow">ASK THE CUSTOMER</div>
+
+        <h2>
+            Discovery questions
+            <small id="qcount">{{asked|length}}/{{s.facts|length}}</small>
+        </h2>
+
+        <p class="muted">
+            Select questions to reveal the customer's requirements.
+        </p>
+
+        <div class="questions">
+
+            {% for id,f in s.facts.items() %}
+
+                <button
+                    class="question {% if id in asked %}asked{% endif %}"
+                    data-q="{{id}}"
+                    {% if id in asked %}disabled{% endif %}
+                >
+                    <span>＋</span>
+                    {{f[0]}}
+                    <b>↗</b>
+                </button>
+
+                <div
+                    class="answer"
+                    id="a-{{id}}"
+                    {% if id not in asked %}hidden{% endif %}
+                >
+                    {% if id in asked %}
+                        {{f[1]}}
+                    {% endif %}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="eyebrow">02 / DESIGN</div>
+
+        <h2>Solution workbench</h2>
+
+        <p class="muted">
+            Select services for your initial design.
+            The architecture diagram updates as you make selections.
+        </p>
+
+        <div class="toolbar">
+            <span>Architecture views</span>
+        </div>
+
+        <div style="display:flex; gap:8px; margin:12px 0 18px;">
+
+            <button
+                type="button"
+                class="button"
+                id="logical-view"
+                aria-pressed="true"
+            >
+                Logical Architecture
+            </button>
+
+            <button
+                type="button"
+                class="button secondary"
+                id="deployment-view"
+                aria-pressed="false"
+            >
+                Deployment View
+            </button>
+
+        </div>
+
+
+        <div class="diagram">
+
+            <div class="eyebrow" id="diagram-heading">
+                LOGICAL ARCHITECTURE
+            </div>
+
+            <p class="muted" id="diagram-description">
+                Services grouped by their logical role in the solution.
+            </p>
+
+            <svg
+                id="diagram"
+                viewBox="0 0 720 240"
+                width="100%"
+                role="img"
+                aria-label="Conceptual architecture diagram of selected AWS services"
+                style="overflow:visible;"
+            >
+                <g id="nodes"></g>
+            </svg>
+
+            <p id="diagram-empty" class="muted" hidden>
+                Select AWS services below to build your architecture diagram.
+            </p>
+
+            <p class="muted" id="diagram-notice">
+                Conceptual architecture only. Relationships and deployment details
+                must be validated before implementation.
+            </p>
+
+        </div>
+
+
+        <div class="toolbar">
+            <span>Service catalog</span>
+            <b id="selcount">{{selected|length}} selected</b>
+        </div>
+
+        <div class="catalog">
+
+            {% for service in service_records if service.enabled %}
+
+                <label
+                    class="service {% if service.id in selected %}chosen{% endif %}"
+                    data-row="{{service.id}}"
+                >
+
+                    <input
+                        type="checkbox"
+                        value="{{service.id}}"
+                        {% if service.id in selected %}checked{% endif %}
+                    >
+
+                    <span class="check"></span>
+
+                    <span class="svcinfo">
+                        <b>{{service.name}}</b>
+                        <small>{{service.description}}</small>
+                        <em>{{service.category}}</em>
+                    </span>
+
+                    <strong class="tick">
+                        {% if service.id in selected %}✓{% else %}＋{% endif %}
+                    </strong>
+
+                </label>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div class="actions">
+
+            <form action="/reset" method="post">
+                <button class="button secondary">
+                    Reset mission
+                </button>
+            </form>
+
+            <form action="/evaluate" method="post" id="eval">
+                <button class="button">
+                    Review my solution →
+                </button>
+            </form>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+// ============================================================
+// REGISTRY DATA
+// ============================================================
+
+const serviceRecords = {{ service_records | tojson }};
+
+const serviceById = Object.fromEntries(
+    serviceRecords.map(service => [service.id, service])
+);
+
+const deploymentProfile = {{ s.deployment_profile | tojson }};
+
+
+// ============================================================
+// ELEMENTS AND STATE
+// ============================================================
+
+const qs = [...document.querySelectorAll('.question')];
+
+const checks = [
+    ...document.querySelectorAll('.service input')
+];
+
+const nodes = document.querySelector('#nodes');
+const diagram = document.querySelector('#diagram');
+const emptyMessage = document.querySelector('#diagram-empty');
+
+const logicalButton = document.querySelector('#logical-view');
+const deploymentButton = document.querySelector('#deployment-view');
+
+const diagramHeading = document.querySelector('#diagram-heading');
+const diagramDescription = document.querySelector('#diagram-description');
+const diagramNotice = document.querySelector('#diagram-notice');
+
+let diagramMode = 'logical';
+
+
+// ============================================================
+// DISCOVERY QUESTIONS
+// ============================================================
+
+qs.forEach(button => {
+
+    button.addEventListener('click', async () => {
+
+        button.disabled = true;
+
+        try {
+
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: button.dataset.q
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Could not retrieve customer answer.');
+            }
+
+            const data = await response.json();
+
+            const answer = document.querySelector(
+                '#a-' + button.dataset.q
+            );
+
+            answer.textContent = data.answer;
+            answer.hidden = false;
+
+            button.classList.add('asked');
+            button.querySelector('span').textContent = '✓';
+
+            document.querySelector('#qcount').textContent =
+                data.asked.length + '/' + qs.length;
+
+        } catch (error) {
+
+            button.disabled = false;
+            alert(error.message);
+
+        }
+
+    });
+
+});
+
+
+// ============================================================
+// SVG HELPERS
+// ============================================================
+
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function svgElement(tag, attributes = {}) {
+
+    const element = document.createElementNS(svgNS, tag);
+
+    Object.entries(attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+    });
+
+    return element;
+
+}
+
+
+// ============================================================
+// DIAGRAM GROUPING
+// ============================================================
+
+function getGroupName(service) {
+
+    if (diagramMode === 'logical') {
+        return service.logical_group || 'other';
+    }
+
+    return service.deployment_group || 'other';
+
+}
+
+
+function formatGroupName(value) {
+
+    return value
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, letter => letter.toUpperCase());
+
+}
+
+
+// ============================================================
+// ARCHITECTURE DIAGRAM
+// ============================================================
+
+function draw() {
+
+    const selectedIds = checks
+        .filter(check => check.checked)
+        .map(check => check.value);
+
+    document.querySelector('#selcount').textContent =
+        selectedIds.length + ' selected';
+
+    document.querySelectorAll('[data-row]').forEach(row => {
+
+        const checkbox = row.querySelector('input');
+
+        row.classList.toggle('chosen', checkbox.checked);
+
+        row.querySelector('.tick').textContent =
+            checkbox.checked ? '✓' : '＋';
+
+    });
+
+    nodes.innerHTML = '';
+
+    if (selectedIds.length === 0) {
+
+        diagram.setAttribute('viewBox', '0 0 720 240');
+        emptyMessage.hidden = false;
+
+        return;
+
+    }
+
+    emptyMessage.hidden = true;
+
+    const selectedServices = selectedIds
+        .map(id => serviceById[id])
+        .filter(Boolean);
+
+
+    // ========================================================
+    // SVG DRAWING HELPERS
+    // ========================================================
+
+    function addRect(
+        x,
+        y,
+        width,
+        height,
+        fill,
+        stroke,
+        radius = 10,
+        dash = ''
+    ) {
+
+        const rect = svgElement('rect', {
+            x,
+            y,
+            width,
+            height,
+            rx: radius,
+            fill,
+            stroke,
+            'stroke-width': 1.5
+        });
+
+        if (dash) {
+            rect.setAttribute('stroke-dasharray', dash);
+        }
+
+        nodes.appendChild(rect);
+
+        return rect;
+
+    }
+
+
+    // FIX: anchor is now a defined optional parameter.
+    // Existing calls that pass "middle" will work correctly.
+
+    function addText(
+        x,
+        y,
+        value,
+        size = 15,
+        color = '#344b5a',
+        weight = 500,
+        anchor = 'start'
+    ) {
+
+        const text = svgElement('text', {
+            x,
+            y,
+            fill: color,
+            'font-size': size,
+            'font-weight': weight,
+            'text-anchor': anchor
+        });
+
+        text.textContent = value;
+
+        nodes.appendChild(text);
+
+        return text;
+
+    }
+
+
+    function addService(service, x, y, width = 190) {
+
+        const height = 54;
+
+        addRect(
+            x,
+            y,
+            width,
+            height,
+            '#e8f1eb',
+            '#5b8f70',
+            8
+        );
+
+        addText(
+            x + 11,
+            y + 22,
+            service.name,
+            12,
+            '#20352a',
+            600
+        );
+
+        addText(
+            x + 11,
+            y + 41,
+            formatGroupName(
+                service.architecture_type || service.category
+            ),
+            10,
+            '#52675a'
+        );
+
+    }
+
+
+    // ========================================================
+    // LOGICAL ARCHITECTURE
+    // ========================================================
+
+    if (diagramMode === 'logical') {
+
+        const grouped = {};
+
+        selectedServices.forEach(service => {
+
+            const group = service.logical_group || 'other';
+
+            if (!grouped[group]) {
+                grouped[group] = [];
+            }
+
+            grouped[group].push(service);
+
+        });
+
+        const groupEntries = Object.entries(grouped);
+
+        const columns = 2;
+        const groupWidth = 330;
+        const groupGap = 24;
+        const nodeHeight = 58;
+        const nodeGap = 12;
+        const groupPadding = 18;
+        const headingHeight = 38;
+
+        const groupHeights = groupEntries.map(
+            ([name, services]) =>
+                groupPadding * 2 +
+                headingHeight +
+                services.length * nodeHeight +
+                Math.max(0, services.length - 1) * nodeGap
+        );
+
+        const groupRows = Math.ceil(groupEntries.length / columns);
+
+        const rowHeights = [];
+
+        for (let row = 0; row < groupRows; row++) {
+
+            const heights = groupHeights.slice(
+                row * columns,
+                row * columns + columns
+            );
+
+            rowHeights.push(Math.max(...heights));
+
+        }
+
+        const totalHeight = rowHeights.reduce(
+            (sum, height) => sum + height,
+            0
+        ) + Math.max(0, groupRows - 1) * groupGap + 40;
+
+        const totalWidth =
+            columns * groupWidth +
+            (columns - 1) * groupGap +
+            40;
+
+        diagram.setAttribute(
+            'viewBox',
+            `0 0 ${totalWidth} ${Math.max(240, totalHeight)}`
+        );
+
+        groupEntries.forEach(([groupName, services], index) => {
+
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+
+            const x = 20 + column * (groupWidth + groupGap);
+
+            const y = 20 + rowHeights
+                .slice(0, row)
+                .reduce(
+                    (sum, height) => sum + height + groupGap,
+                    0
+                );
+
+            const groupHeight = groupHeights[index];
+
+            addRect(
+                x,
+                y,
+                groupWidth,
+                groupHeight,
+                '#f1f4f6',
+                '#b9c5cc',
+                12
+            );
+
+            addText(
+                x + groupPadding,
+                y + 25,
+                formatGroupName(groupName),
+                13,
+                '#344b5a',
+                700
+            );
+
+            services.forEach((service, serviceIndex) => {
+
+                const nodeX = x + groupPadding;
+
+                const nodeY =
+                    y + groupPadding + headingHeight +
+                    serviceIndex * (nodeHeight + nodeGap);
+
+                addService(
+                    service,
+                    nodeX,
+                    nodeY,
+                    groupWidth - groupPadding * 2
+                );
+
+            });
+
+        });
+
+        diagramNotice.textContent =
+            'Logical grouping is based on registry metadata. It does not assert deployed network connections.';
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // DEPLOYMENT VIEW — SCENARIO-DRIVEN AWS INFRASTRUCTURE
+    // ========================================================
+
+    if (!deploymentProfile || !deploymentProfile.service_placement) {
+
+        diagramNotice.textContent =
+            'Deployment profile is not configured for this scenario.';
+
+        return;
+
+    }
+
+    const profilePlacement = deploymentProfile.service_placement;
+
+    const globalIds = profilePlacement.global || [];
+    const regionalIds = profilePlacement.regional || [];
+    const edgeIds = profilePlacement.edge || [];
+
+    const globalServices = selectedServices.filter(
+        service => globalIds.includes(service.id)
+    );
+
+    const regionalServices = selectedServices.filter(
+        service => regionalIds.includes(service.id)
+    );
+
+    const edgeServices = selectedServices.filter(
+        service => edgeIds.includes(service.id)
+    );
+
+
+    const subnetAssignments = {
+        publicA: profilePlacement.public || [],
+        publicB: [],
+        privateA: profilePlacement.private || [],
+        privateB: []
+    };
+
+    const servicesFor = ids => selectedServices.filter(
+        service => ids.includes(service.id)
+    );
+
+    const subnetServices = {
+        publicA: servicesFor(subnetAssignments.publicA),
+        publicB: servicesFor(subnetAssignments.publicB),
+        privateA: servicesFor(subnetAssignments.privateA),
+        privateB: servicesFor(subnetAssignments.privateB)
+    };
+
+
+    // ========================================================
+    // LAYOUT DIMENSIONS
+    // ========================================================
+
+    const width = 760;
+
+    const regionX = 175;
+    const regionWidth = 570;
+
+    const azWidth = 245;
+    const subnetWidth = 225;
+    const subnetXOffset = 10;
+
+    const cardHeight = 62;
+    const cardGap = 10;
+    const subnetMinimumHeight = 140;
+
+
+    function getSubnetHeight(services) {
+
+        return Math.max(
+            subnetMinimumHeight,
+            35 + services.length * (cardHeight + cardGap)
+        );
+
+    }
+
+
+    // ========================================================
+    // AVAILABILITY ZONE DIMENSIONS
+    // ========================================================
+
+    function getAZHeight(publicHeight, privateHeight) {
+
+        return 40 + publicHeight + 14 + privateHeight + 15;
+
+    }
+
+    const publicAHeight = getSubnetHeight(subnetServices.publicA);
+    const publicBHeight = getSubnetHeight(subnetServices.publicB);
+
+    const privateAHeight = getSubnetHeight(subnetServices.privateA);
+    const privateBHeight = getSubnetHeight(subnetServices.privateB);
+
+    const azAHeight = getAZHeight(publicAHeight, privateAHeight);
+    const azBHeight = getAZHeight(publicBHeight, privateBHeight);
+
+    const azHeight = Math.max(azAHeight, azBHeight);
+
+
+    // ========================================================
+    // EDGE AND REGIONAL SERVICE AREAS
+    // ========================================================
+
+    const edgeAreaHeight = edgeServices.length > 0 ? 100 : 20;
+
+    const regionalRows = Math.ceil(regionalServices.length / 2);
+
+    const regionalAreaHeight = regionalServices.length > 0
+        ? 48 + regionalRows * 65
+        : 20;
+
+
+    // ========================================================
+    // INFRASTRUCTURE BOUNDARY DIMENSIONS
+    // ========================================================
+
+    const vpcY = 70 + edgeAreaHeight;
+
+    const vpcHeight = 90 + azHeight;
+
+    const regionHeight =
+        vpcY + vpcHeight + regionalAreaHeight + 25;
+
+    const height = Math.max(480, regionHeight + 20);
+
+    diagram.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+
+    // ========================================================
+    // GLOBAL SERVICES
+    // ========================================================
+
+    addText(18, 25, 'GLOBAL SERVICES', 12, '#344b5a', 700);
+
+    globalServices.forEach((service, index) => {
+
+        addService(
+            service,
+            18,
+            42 + index * 66,
+            145
+        );
+
+    });
+
+
+    // ========================================================
+    // AWS REGION
+    // ========================================================
+
+    addRect(
+        regionX,
+        20,
+        regionWidth,
+        regionHeight,
+        '#fbf7ef',
+        '#d69b53',
+        16
+    );
+
+    addText(
+        regionX + 18,
+        47,
+        'AWS REGION',
+        15,
+        '#80500e',
+        700
+    );
+
+    addText(
+        regionX + 18,
+        66,
+        'Regional resources',
+        11,
+        '#435767'
+    );
+
+
+    // ========================================================
+    // REGIONAL EDGE SERVICES
+    // ========================================================
+
+    const vpcStartY = vpcY;
+
+    if (edgeServices.length > 0) {
+
+        addText(
+            regionX + 18,
+            88,
+            'REGIONAL EDGE PROTECTION',
+            11,
+            '#80500e',
+            700
+        );
+
+        edgeServices.forEach((service, index) => {
+
+            addService(
+                service,
+                regionX + 18 + index * 195,
+                98,
+                180
+            );
+
+        });
+
+    }
+
+
+    // ========================================================
+    // AMAZON VPC
+    // ========================================================
+
+    const vpcX = regionX + 18;
+    const vpcWidth = regionWidth - 36;
+
+    addRect(
+        vpcX,
+        vpcStartY,
+        vpcWidth,
+        vpcHeight,
+        '#f0f6fb',
+        '#5794c7',
+        12
+    );
+
+    addText(
+        vpcX + 15,
+        vpcStartY + 25,
+        'AMAZON VPC',
+        15,
+        '#155b91',
+        700
+    );
+
+    addText(
+        vpcX + 15,
+        vpcStartY + 44,
+        'Conceptual network boundary',
+        11,
+        '#435767'
+    );
+
+
+    // ========================================================
+    // AVAILABILITY ZONES
+    // ========================================================
+
+    const azY = vpcStartY + 62;
+
+    const az1X = vpcX + 15;
+    const az2X = az1X + azWidth + 17;
+
+    addRect(
+        az1X, azY, azWidth, azHeight,
+        '#f6f8fa', '#748b9a', 10, '6 4'
+    );
+
+    addRect(
+        az2X, azY, azWidth, azHeight,
+        '#f6f8fa', '#748b9a', 10, '6 4'
+    );
+
+    addText(
+        az1X + 12, azY + 22,
+        'AVAILABILITY ZONE A', 12, '#344b5a', 700
+    );
+
+    addText(
+        az2X + 12, azY + 22,
+        'AVAILABILITY ZONE B', 12, '#344b5a', 700
+    );
+
+    if (
+        subnetServices.publicB.length === 0 &&
+        subnetServices.privateB.length === 0
+    ) {
+
+        addText(
+            az2X + azWidth / 2,
+            azY + azHeight - 9,
+            'NO RESOURCES ASSIGNED',
+            10,
+            '#697b87',
+            600,
+            'middle'
+        );
+
+    }
+
+
+    // ========================================================
+    // PUBLIC SUBNETS
+    // ========================================================
+
+    const publicSubnetY = azY + 40;
+
+    addRect(
+        az1X + subnetXOffset,
+        publicSubnetY,
+        subnetWidth,
+        publicAHeight,
+        '#eff7f2',
+        '#5c9d85',
+        7,
+        '4 3'
+    );
+
+    addRect(
+        az2X + subnetXOffset,
+        publicSubnetY,
+        subnetWidth,
+        publicBHeight,
+        '#eff7f2',
+        '#5c9d85',
+        7,
+        '4 3'
+    );
+
+    addText(
+        az1X + 20, publicSubnetY + 20,
+        'PUBLIC SUBNET', 11, '#216443', 700
+    );
+
+    addText(
+        az2X + 20, publicSubnetY + 20,
+        'PUBLIC SUBNET', 11, '#216443', 700
+    );
+
+
+    function drawSubnetServices(services, x, y, subnetHeight) {
+
+        if (services.length === 0) {
+
+            addText(
+                x + subnetWidth / 2,
+                y + subnetHeight / 2 + 10,
+                'No services assigned',
+                11,
+                '#647985',
+                500,
+                'middle'
+            );
+
+            return;
+
+        }
+
+        services.forEach((service, index) => {
+
+            addService(
+                service,
+                x,
+                y + 30 + index * (cardHeight + cardGap),
+                subnetWidth - 20
+            );
+
+        });
+
+    }
+
+
+    drawSubnetServices(
+        subnetServices.publicA,
+        az1X + subnetXOffset,
+        publicSubnetY,
+        publicAHeight
+    );
+
+    drawSubnetServices(
+        subnetServices.publicB,
+        az2X + subnetXOffset,
+        publicSubnetY,
+        publicBHeight
+    );
+
+
+    // ========================================================
+    // PRIVATE SUBNETS
+    // ========================================================
+
+    const privateSubnetY =
+        publicSubnetY +
+        Math.max(publicAHeight, publicBHeight) + 14;
+
+    addRect(
+        az1X + subnetXOffset,
+        privateSubnetY,
+        subnetWidth,
+        privateAHeight,
+        '#eff5fa',
+        '#6688a5',
+        7,
+        '4 3'
+    );
+
+    addRect(
+        az2X + subnetXOffset,
+        privateSubnetY,
+        subnetWidth,
+        privateBHeight,
+        '#eff5fa',
+        '#6688a5',
+        7,
+        '4 3'
+    );
+
+    addText(
+        az1X + 20, privateSubnetY + 20,
+        'PRIVATE SUBNET', 11, '#285f88', 700
+    );
+
+    addText(
+        az2X + 20, privateSubnetY + 20,
+        'PRIVATE SUBNET', 11, '#285f88', 700
+    );
+
+    drawSubnetServices(
+        subnetServices.privateA,
+        az1X + subnetXOffset,
+        privateSubnetY,
+        privateAHeight
+    );
+
+    drawSubnetServices(
+        subnetServices.privateB,
+        az2X + subnetXOffset,
+        privateSubnetY,
+        privateBHeight
+    );
+
+
+    // ========================================================
+    // REGIONAL SERVICES OUTSIDE THE VPC
+    // ========================================================
+
+    if (regionalServices.length > 0) {
+
+        const serviceAreaY = vpcStartY + vpcHeight + 18;
+
+        addText(
+            vpcX + 5,
+            serviceAreaY,
+            'REGIONAL SERVICES — OUTSIDE VPC',
+            11,
+            '#435767',
+            700
+        );
+
+        regionalServices.forEach((service, index) => {
+
+            const column = index % 2;
+            const row = Math.floor(index / 2);
+
+            addService(
+                service,
+                vpcX + 5 + column * 250,
+                serviceAreaY + 18 + row * 65,
+                230
+            );
+
+        });
+
+    }
+
+
+    // ========================================================
+    // VPC SERVICE INDICATOR
+    // ========================================================
+
+    if (selectedServices.some(service => service.id === 'vpc')) {
+
+        addText(
+            vpcX + 15,
+            vpcStartY + vpcHeight - 12,
+            'Amazon VPC selected',
+            10,
+            '#155b91',
+            700
+        );
+
+    }
+
+
+    // ========================================================
+    // DEPLOYMENT VIEW NOTICE
+    // ========================================================
+
+    diagramNotice.textContent =
+        'Conceptual deployment proposal. AZ A contains the scenario-assigned subnet resources. AZ B is shown for architectural context but has no resources assigned in this scenario profile. Multi-AZ deployment and high availability are not yet established. Subnet placements are illustrative, not configured infrastructure.';
+
+}
+
+
+// ============================================================
+// VIEW SWITCHING
+// ============================================================
+
+function setDiagramMode(mode) {
+
+    diagramMode = mode;
+
+    const logical = mode === 'logical';
+
+    logicalButton.classList.toggle('secondary', !logical);
+    deploymentButton.classList.toggle('secondary', logical);
+
+    logicalButton.setAttribute('aria-pressed', String(logical));
+    deploymentButton.setAttribute('aria-pressed', String(!logical));
+
+    if (logical) {
+
+        diagramHeading.textContent = 'LOGICAL ARCHITECTURE';
+
+        diagramDescription.textContent =
+            'Services grouped by their logical role in the solution.';
+
+        diagramNotice.textContent =
+            'Logical grouping is based on registry metadata. It does not assert deployed network connections.';
+
+    } else {
+
+        diagramHeading.textContent = 'CONCEPTUAL DEPLOYMENT VIEW';
+
+        diagramDescription.textContent =
+            'Services grouped by their suggested deployment role.';
+
+        diagramNotice.textContent =
+            'Deployment placement is conceptual. Region, Availability Zones, subnets, routing, and security boundaries have not yet been specified.';
+
+    }
+
+    draw();
+
+}
+
+
+logicalButton.addEventListener('click', () => {
+    setDiagramMode('logical');
+});
+
+deploymentButton.addEventListener('click', () => {
+    setDiagramMode('deployment');
+});
+
+
+// ============================================================
+// SAVE SERVICE SELECTION
+// ============================================================
+
+async function save() {
+
+    const selected = checks
+        .filter(check => check.checked)
+        .map(check => check.value);
+
+    const response = await fetch('/select', {
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+            services: selected
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Could not save service selections.');
+    }
+
+}
+
+
+// ============================================================
+// SERVICE SELECTION EVENTS
+// ============================================================
+
+checks.forEach(check => {
+
+    check.addEventListener('change', async () => {
+
+        draw();
+
+        try {
+
+            await save();
+
+        } catch (error) {
+
+            alert(error.message);
+
+        }
+
+    });
+
+});
+
+
+// ============================================================
+// EVALUATION
+// ============================================================
+
+document.querySelector('#eval').addEventListener(
+    'submit',
+    async event => {
+
+        event.preventDefault();
+
+        const button = event.target.querySelector('button');
+
+        button.disabled = true;
+
+        try {
+
+            await save();
+
+            event.target.submit();
+
+        } catch (error) {
+
+            button.disabled = false;
+
+            alert(error.message);
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// INITIALIZE
+// ============================================================
+
+draw();
+
+</script>
+
+{% endblock %}

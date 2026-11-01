@@ -1,0 +1,219 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="crumb">
+    <a href="/">Missions</a> / Solution review
+</div>
+
+<div class="eyebrow">MISSION DEBRIEF</div>
+
+<h1>Architecture review</h1>
+
+<p class="intro">
+    Your score is a learning signal based on a simple reference rule set,
+    not an exam grade or proof of production readiness.
+</p>
+
+<!-- OVERALL SCORE -->
+
+<div class="scorehero">
+    <div class="ring">
+        {{r.score}}
+        <small>/100</small>
+    </div>
+
+    <div>
+        <div class="eyebrow">OVERALL SCORE</div>
+
+        <h2>
+            {% if r.score >= 85 %}
+                Strong foundation
+            {% elif r.score >= 65 %}
+                Promising design
+            {% else %}
+                More discovery required
+            {% endif %}
+        </h2>
+
+        <p class="muted">
+            Close the gaps below and validate assumptions.
+        </p>
+    </div>
+</div>
+
+<!-- COMPLETE SCORE BREAKDOWN -->
+
+<div class="scoregrid">
+
+    <div class="scorecard">
+        <span>Architecture foundation</span>
+        <b>{{r.foundation}}<small>/15</small></b>
+        <div class="bar">
+            <i style="width:{{r.foundation/15*100}}%"></i>
+        </div>
+    </div>
+
+    {% for label,val,max in [
+        ('Discovery',r.discovery,20),
+        ('Core services',r.core,45),
+        ('Bonus improvements',r.bonus,20)
+    ] %}
+
+    <div class="scorecard">
+        <span>{{label}}</span>
+        <b>{{val}}<small>/{{max}}</small></b>
+        <div class="bar">
+            <i style="width:{{val/max*100}}%"></i>
+        </div>
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<!-- ARCHITECTURE REVIEW -->
+
+<div class="reviewgrid">
+
+    <section class="panel">
+
+        <div class="eyebrow">GAPS TO ADDRESS</div>
+
+        <h2>Missing core services</h2>
+
+        {% if r.missing %}
+
+            {% for id in r.missing %}
+
+                <div class="reviewitem">
+                    <b>{{names[id]}}</b>
+                    <p>
+                        {{notes.get(id,'Review whether this service is appropriate for the requirements.')}}
+                    </p>
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p>
+                All reference core services selected.
+                Now validate workload, cost, and recovery requirements.
+            </p>
+
+        {% endif %}
+
+        <hr>
+
+        <h2>Bonus services selected</h2>
+
+        {% if r.bonuses %}
+
+            {% for id in r.bonuses %}
+
+                <div class="reviewitem">
+                    <b>{{names[id]}}</b>
+                    <p>{{notes.get(id,'Potential improvement; validate fit.')}}</p>
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="muted">
+                Consider auditing, encryption-key management,
+                configuration assessment, database modernization,
+                or suitable object storage.
+            </p>
+
+        {% endif %}
+
+        {% if r.conditional %}
+
+            <hr>
+
+            <h2>Conditional architecture services</h2>
+
+            <p class="muted">
+                These services are not automatically right or wrong.
+                Their value depends on the application architecture
+                and the customer's requirements.
+            </p>
+
+            {% for id in r.conditional %}
+
+                <div class="reviewitem">
+                    <b>{{names[id]}}</b>
+                    <p>{{notes.get(id,'Validate the architectural requirements before implementation.')}}</p>
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    </section>
+
+    <!-- ARCHITECT'S NOTES -->
+
+    <section class="panel">
+
+        <div class="eyebrow">ARCHITECT'S NOTES</div>
+
+        <h2>Validate before presenting</h2>
+
+        <div class="reviewitem">
+            <b>Recovery objectives</b>
+            <p>
+                Prove backup, replication, and restore procedures meet
+                the 1-hour recovery time objective and 15-minute
+                recovery point objective.
+            </p>
+        </div>
+
+        <div class="reviewitem">
+            <b>Database compatibility</b>
+            <p>
+                Confirm SQL Server edition, licensing, feature support,
+                migration path, and performance before choosing
+                managed database services.
+            </p>
+        </div>
+
+        <div class="reviewitem">
+            <b>Healthcare security</b>
+            <p>
+                Define data flows, access, encryption, logging,
+                business associate obligations, and shared-responsibility
+                boundaries. A service list alone does not establish compliance.
+            </p>
+        </div>
+
+        <div class="reviewitem">
+            <b>Cost and scope</b>
+            <p>
+                Estimate compute, storage, transfer, backups, support,
+                licensing, and resilience costs with current AWS pricing.
+            </p>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- NAVIGATION -->
+
+<div class="actions end">
+
+    <a class="button secondary" href="/">
+        Return to missions
+    </a>
+
+    <a class="button" href="/play">
+        Try again ↗
+    </a>
+
+</div>
+
+{% endblock %}

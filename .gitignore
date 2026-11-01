@@ -1,0 +1,35 @@
+
+# Python environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Local databases and backups
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.bak
+
+# Credentials and environment variables
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# IDE and operating system files
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# Local backup copies
+*_backup.*
+*.bak
+*.bk
+*_bk
