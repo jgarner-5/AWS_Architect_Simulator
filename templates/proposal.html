@@ -27,82 +27,810 @@
     </div>
 </section>
 
-<section class="proposal-welcome">
+<section class="studio-toolbar">
     <div>
-        <div class="eyebrow">GET STARTED</div>
-        <h2>What would you like to work on?</h2>
-        <p class="muted">
-            Create a new client engagement or develop an architecture
-            from an existing starting point.
-        </p>
+        <label for="architectureSelect">CURRENT ARCHITECTURE</label>
+        <select id="architectureSelect">
+            <option value="">Loading saved architectures...</option>
+        </select>
     </div>
+
+    <button class="button primary" id="newArchitectureButton">
+        + New Architecture
+    </button>
+
+    <button class="button secondary" id="reloadButton">
+        Reload Design
+    </button>
 </section>
 
-<div class="proposal-options">
-
-    <article class="proposal-card">
-        <div class="proposal-icon">＋</div>
-        <div class="eyebrow">NEW ENGAGEMENT</div>
-        <h2>Start a new proposal</h2>
-        <p>
-            Begin with a blank workspace. Capture client information,
-            business objectives, technical requirements, and constraints.
-        </p>
-        <span class="proposal-action">Coming in the next development phase</span>
-    </article>
-
-    <article class="proposal-card">
-        <div class="proposal-icon">◇</div>
-        <div class="eyebrow">ARCHITECTURE DESIGN</div>
-        <h2>Design an AWS solution</h2>
-        <p>
-            Select AWS services, configure infrastructure, define
-            network placement, and build an architecture diagram.
-        </p>
-        <span class="proposal-action">Architecture workspace planned</span>
-    </article>
-
-    <article class="proposal-card">
-        <div class="proposal-icon">▤</div>
-        <div class="eyebrow">CLIENT DELIVERABLES</div>
-        <h2>Build a client proposal</h2>
-        <p>
-            Develop technical recommendations, architecture documentation,
-            cost estimates, implementation phases, and final presentations.
-        </p>
-        <span class="proposal-action">Proposal generation planned</span>
-    </article>
-
-</div>
-
-<section class="proposal-workspace">
-
+<section class="studio-project-info">
     <div>
-        <div class="eyebrow">DESIGN ENVIRONMENT</div>
-        <h2>Architecture canvas</h2>
-        <p class="muted">
-            The engineering canvas will become the central workspace
-            for building and connecting AWS infrastructure components.
+        <div class="eyebrow">ARCHITECTURE DESIGN</div>
+        <h2 id="architectureName">No architecture selected</h2>
+        <p id="architectureDescription" class="muted">
+            Create a new architecture or select an existing design.
         </p>
     </div>
 
-    <div class="architecture-canvas proposal-empty-canvas">
-        <div class="canvas-placeholder">
-            <div class="canvas-symbol">◇</div>
-            <h3>Your architecture starts here</h3>
-            <p>
-                AWS services, network components, connections,
-                and deployment configurations will appear here.
-            </p>
+    <div class="studio-metadata">
+        <div>
+            <span>REGION</span>
+            <strong id="architectureRegion">—</strong>
+        </div>
+        <div>
+            <span>RESOURCES</span>
+            <strong id="resourceCount">0</strong>
+        </div>
+        <div>
+            <span>CONNECTIONS</span>
+            <strong id="connectionCount">0</strong>
         </div>
     </div>
-
 </section>
+
+<div id="studioMessage" class="studio-message" role="status">
+    Loading architecture workspace...
+</div>
+
+<div class="studio-layout">
+
+    <aside class="studio-sidebar">
+
+        <section class="studio-panel">
+            <div class="eyebrow">AWS SERVICE CATALOG</div>
+            <h2>Available services</h2>
+            <p class="muted">
+                Select a service to add it to your architecture.
+            </p>
+
+            <input
+                type="search"
+                id="serviceSearch"
+                placeholder="Search AWS services..."
+                aria-label="Search AWS services"
+            >
+
+            <div id="serviceCatalog" class="service-catalog">
+                Loading AWS services...
+            </div>
+        </section>
+
+    </aside>
+
+    <main class="studio-main">
+
+        <section class="studio-panel canvas-panel">
+
+            <div class="canvas-heading">
+                <div>
+                    <div class="eyebrow">DESIGN ENVIRONMENT</div>
+                    <h2>Architecture canvas</h2>
+                    <p class="muted">
+                        Your selected AWS infrastructure components.
+                    </p>
+                </div>
+
+                <span class="canvas-indicator">DESIGN VIEW</span>
+            </div>
+
+            <div
+                id="architectureCanvas"
+                class="architecture-canvas proposal-editor-canvas"
+            >
+                <div class="canvas-placeholder">
+                    <div class="canvas-symbol">◇</div>
+                    <h3>Your architecture starts here</h3>
+                    <p>
+                        Create or load an architecture, then add AWS
+                        services from the catalog.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="studio-panel resource-details">
+            <div class="eyebrow">DESIGN SUMMARY</div>
+            <h2>Architecture components</h2>
+            <div id="resourceList">
+                <p class="muted">No resources added yet.</p>
+            </div>
+        </section>
+
+    </main>
+
+</div>
 
 <div class="actions end">
     <a class="button secondary" href="/">
         Return to Simulator
     </a>
 </div>
+
+<!-- New architecture dialog -->
+<div id="newArchitectureDialog" class="studio-dialog" hidden>
+    <form id="newArchitectureForm" class="studio-dialog-card">
+
+        <div class="eyebrow">NEW DESIGN</div>
+        <h2>Create architecture</h2>
+
+        <label for="newArchitectureName">Architecture name</label>
+        <input
+            type="text"
+            id="newArchitectureName"
+            required
+            placeholder="Example: Medical Practice Cloud"
+        >
+
+        <label for="newArchitectureDescription">Description</label>
+        <textarea
+            id="newArchitectureDescription"
+            rows="3"
+            placeholder="Describe the purpose of this architecture."
+        ></textarea>
+
+        <label for="newArchitectureRegion">AWS Region</label>
+        <select id="newArchitectureRegion">
+            <option value="us-east-1">US East (N. Virginia)</option>
+            <option value="us-east-2">US East (Ohio)</option>
+            <option value="us-west-1">US West (N. California)</option>
+            <option value="us-west-2">US West (Oregon)</option>
+        </select>
+
+        <div class="dialog-actions">
+            <button type="button" class="button secondary" id="cancelNewArchitecture">
+                Cancel
+            </button>
+            <button type="submit" class="button primary">
+                Create Architecture
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<style>
+.studio-toolbar {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+    margin: 24px 0;
+    background: #fff;
+    border: 1px solid #e1e5e8;
+    border-radius: 10px;
+}
+
+.studio-toolbar > div {
+    flex: 1;
+    min-width: 220px;
+}
+
+.studio-toolbar label,
+.studio-dialog-card label {
+    display: block;
+    margin-bottom: 7px;
+    color: #66727a;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+
+.studio-toolbar select,
+.studio-dialog-card input,
+.studio-dialog-card textarea,
+.studio-dialog-card select,
+#serviceSearch {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d9dfe3;
+    border-radius: 6px;
+    background: #fff;
+    color: #202a30;
+    font: inherit;
+}
+
+.studio-project-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid #e1e5e8;
+}
+
+.studio-project-info h2 {
+    margin: 5px 0;
+}
+
+.studio-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+}
+
+.studio-metadata div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.studio-metadata span {
+    color: #7b878e;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+
+.studio-metadata strong {
+    font-size: 15px;
+}
+
+.studio-message {
+    margin: 16px 0;
+    padding: 11px 14px;
+    border-radius: 6px;
+    background: #edf2f5;
+    color: #34434b;
+    font-size: 13px;
+}
+
+.studio-message.error {
+    background: #fbecec;
+    color: #922f2f;
+}
+
+.studio-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.studio-panel {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e1e5e8;
+    border-radius: 10px;
+}
+
+.studio-panel h2 {
+    margin: 7px 0;
+}
+
+.studio-sidebar,
+.studio-main {
+    min-width: 0;
+}
+
+.studio-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#serviceSearch {
+    margin: 12px 0;
+}
+
+.service-category {
+    margin-top: 18px;
+}
+
+.service-category h3 {
+    padding-bottom: 7px;
+    border-bottom: 1px solid #e7eaec;
+    color: #69767d;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.service-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #edf0f2;
+}
+
+.service-option strong {
+    display: block;
+    font-size: 13px;
+}
+
+.service-option small {
+    color: #7c878d;
+    font-size: 11px;
+}
+
+.service-option button {
+    flex-shrink: 0;
+    padding: 6px 9px;
+    border: 1px solid #ccd5da;
+    border-radius: 5px;
+    background: #fff;
+    color: #344d5c;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.service-option button:hover {
+    background: #edf3f6;
+}
+
+.canvas-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.canvas-indicator {
+    padding: 6px 9px;
+    border-radius: 4px;
+    background: #edf2f5;
+    color: #566873;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+
+.proposal-editor-canvas {
+    min-height: 500px;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    align-content: start;
+    align-items: start;
+    gap: 16px;
+    border: 1px solid #dce2e6;
+    border-radius: 7px;
+    background-color: #fbfcfd;
+    background-image:
+        linear-gradient(#e9edf0 1px, transparent 1px),
+        linear-gradient(90deg, #e9edf0 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.proposal-editor-canvas .canvas-placeholder {
+    grid-column: 1 / -1;
+    align-self: center;
+    justify-self: center;
+    max-width: 350px;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.architecture-resource-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #cbd6dc;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(20, 40, 50, .06);
+}
+
+.architecture-resource-card .resource-type {
+    color: #75848c;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.architecture-resource-card h3 {
+    margin: 8px 0;
+    color: #24333b;
+    font-size: 14px;
+}
+
+.architecture-resource-card .resource-id {
+    overflow-wrap: anywhere;
+    color: #8a969c;
+    font-size: 10px;
+}
+
+.resource-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid #edf0f2;
+    font-size: 13px;
+}
+
+.resource-row small {
+    color: #7c878d;
+}
+
+.studio-dialog {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(20, 30, 35, .55);
+}
+
+.studio-dialog[hidden] {
+    display: none;
+}
+
+.studio-dialog-card {
+    width: min(100%, 460px);
+    padding: 26px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, .2);
+}
+
+.studio-dialog-card h2 {
+    margin: 8px 0 20px;
+}
+
+.studio-dialog-card input,
+.studio-dialog-card textarea,
+.studio-dialog-card select {
+    margin-bottom: 16px;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@media (max-width: 850px) {
+    .studio-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .studio-project-info {
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+(() => {
+    const API = "/api";
+
+    let currentArchitectureId = null;
+    let allServices = [];
+    let currentResources = [];
+
+    const architectureSelect = document.getElementById("architectureSelect");
+    const architectureName = document.getElementById("architectureName");
+    const architectureDescription = document.getElementById("architectureDescription");
+    const architectureRegion = document.getElementById("architectureRegion");
+    const resourceCount = document.getElementById("resourceCount");
+    const connectionCount = document.getElementById("connectionCount");
+    const serviceCatalog = document.getElementById("serviceCatalog");
+    const serviceSearch = document.getElementById("serviceSearch");
+    const architectureCanvas = document.getElementById("architectureCanvas");
+    const resourceList = document.getElementById("resourceList");
+    const studioMessage = document.getElementById("studioMessage");
+    const dialog = document.getElementById("newArchitectureDialog");
+    const newArchitectureForm = document.getElementById("newArchitectureForm");
+
+    function showMessage(message, isError = false) {
+        studioMessage.textContent = message;
+        studioMessage.classList.toggle("error", isError);
+    }
+
+    async function apiRequest(path, options = {}) {
+        const response = await fetch(`${API}${path}`, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.headers || {})
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "The request could not be completed.");
+        }
+
+        return data;
+    }
+
+    async function loadServices() {
+        allServices = await apiRequest("/architecture/services");
+        renderServiceCatalog();
+    }
+
+    async function loadArchitectureList(selectId = null) {
+        const architectures = await apiRequest("/architectures");
+
+        architectureSelect.replaceChildren();
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "Select an architecture...";
+        architectureSelect.appendChild(emptyOption);
+
+        architectures.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item.architecture_id;
+            option.textContent = item.name;
+            architectureSelect.appendChild(option);
+        });
+
+        if (selectId) {
+            architectureSelect.value = selectId;
+        }
+
+        if (architectureSelect.value) {
+            await loadArchitecture(architectureSelect.value);
+        } else if (architectures.length > 0) {
+            await loadArchitecture(architectures[0].architecture_id);
+        } else {
+            currentArchitectureId = null;
+            renderEmptyArchitecture();
+        }
+    }
+
+    async function loadArchitecture(id) {
+        if (!id) return;
+
+        try {
+            const design = await apiRequest(`/architectures/${id}`);
+
+            currentArchitectureId = design.architecture_id;
+            currentResources = design.resources || [];
+
+            architectureName.textContent = design.name;
+            architectureDescription.textContent =
+                design.description || "No description provided.";
+            architectureRegion.textContent = design.region || "—";
+            resourceCount.textContent = currentResources.length;
+            connectionCount.textContent = (design.connections || []).length;
+
+            renderCanvas();
+            renderResourceList();
+
+            showMessage(`Loaded architecture: ${design.name}`);
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+    function renderServiceCatalog() {
+        const searchTerm = serviceSearch.value.trim().toLowerCase();
+
+        const filtered = allServices.filter(service => {
+            return (
+                service.name.toLowerCase().includes(searchTerm) ||
+                service.category.toLowerCase().includes(searchTerm) ||
+                service.description.toLowerCase().includes(searchTerm)
+            );
+        });
+
+        serviceCatalog.replaceChildren();
+
+        if (filtered.length === 0) {
+            serviceCatalog.textContent = "No matching AWS services found.";
+            return;
+        }
+
+        const categories = {};
+
+        filtered.forEach(service => {
+            const category = service.category || "Other";
+            if (!categories[category]) categories[category] = [];
+            categories[category].push(service);
+        });
+
+        Object.keys(categories).sort().forEach(category => {
+            const section = document.createElement("div");
+            section.className = "service-category";
+
+            const heading = document.createElement("h3");
+            heading.textContent = category;
+            section.appendChild(heading);
+
+            categories[category].forEach(service => {
+                const row = document.createElement("div");
+                row.className = "service-option";
+
+                const details = document.createElement("div");
+
+                const name = document.createElement("strong");
+                name.textContent = service.name;
+
+                const id = document.createElement("small");
+                id.textContent = service.id;
+
+                details.append(name, id);
+
+                const button = document.createElement("button");
+                button.type = "button";
+                button.textContent = "＋ Add";
+                button.addEventListener("click", () => addResource(service.id));
+
+                row.append(details, button);
+                section.appendChild(row);
+            });
+
+            serviceCatalog.appendChild(section);
+        });
+    }
+
+    async function addResource(serviceId) {
+        if (!currentArchitectureId) {
+            showMessage("Create or select an architecture before adding services.", true);
+            return;
+        }
+
+        try {
+            await apiRequest(
+                `/architectures/${currentArchitectureId}/resources`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({ service_id: serviceId })
+                }
+            );
+
+            await loadArchitecture(currentArchitectureId);
+            showMessage("AWS service added to your architecture.");
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+    function renderCanvas() {
+        architectureCanvas.replaceChildren();
+
+        if (currentResources.length === 0) {
+            const placeholder = document.createElement("div");
+            placeholder.className = "canvas-placeholder";
+
+            const heading = document.createElement("h3");
+            heading.textContent = "Your architecture starts here";
+
+            const description = document.createElement("p");
+            description.textContent =
+                "Select AWS services from the catalog to begin building your design.";
+
+            placeholder.append(heading, description);
+            architectureCanvas.appendChild(placeholder);
+            return;
+        }
+
+        currentResources.forEach(resource => {
+            const card = document.createElement("article");
+            card.className = "architecture-resource-card";
+
+            const type = document.createElement("div");
+            type.className = "resource-type";
+            type.textContent = resource.service_id;
+
+            const name = document.createElement("h3");
+            name.textContent = resource.name;
+
+            const id = document.createElement("div");
+            id.className = "resource-id";
+            id.textContent = `Resource ID: ${resource.resource_id}`;
+
+            card.append(type, name, id);
+            architectureCanvas.appendChild(card);
+        });
+    }
+
+    function renderResourceList() {
+        resourceList.replaceChildren();
+
+        if (currentResources.length === 0) {
+            const message = document.createElement("p");
+            message.className = "muted";
+            message.textContent = "No resources added yet.";
+            resourceList.appendChild(message);
+            return;
+        }
+
+        currentResources.forEach((resource, index) => {
+            const row = document.createElement("div");
+            row.className = "resource-row";
+
+            const name = document.createElement("strong");
+            name.textContent = `${index + 1}. ${resource.name}`;
+
+            const service = document.createElement("small");
+            service.textContent = resource.service_id;
+
+            row.append(name, service);
+            resourceList.appendChild(row);
+        });
+    }
+
+    function renderEmptyArchitecture() {
+        currentArchitectureId = null;
+        currentResources = [];
+
+        architectureName.textContent = "No architecture selected";
+        architectureDescription.textContent =
+            "Create a new architecture or select an existing design.";
+        architectureRegion.textContent = "—";
+        resourceCount.textContent = "0";
+        connectionCount.textContent = "0";
+
+        renderCanvas();
+        renderResourceList();
+    }
+
+    document.getElementById("newArchitectureButton").addEventListener("click", () => {
+        dialog.hidden = false;
+        document.getElementById("newArchitectureName").focus();
+    });
+
+    document.getElementById("cancelNewArchitecture").addEventListener("click", () => {
+        dialog.hidden = true;
+    });
+
+    newArchitectureForm.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const name = document.getElementById("newArchitectureName").value.trim();
+        const description = document.getElementById("newArchitectureDescription").value.trim();
+        const region = document.getElementById("newArchitectureRegion").value;
+
+        try {
+            const created = await apiRequest("/architectures", {
+                method: "POST",
+                body: JSON.stringify({ name, description, region })
+            });
+
+            dialog.hidden = true;
+            newArchitectureForm.reset();
+
+            await loadArchitectureList(created.architecture_id);
+            showMessage("New architecture created successfully.");
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    });
+
+    architectureSelect.addEventListener("change", () => {
+        if (architectureSelect.value) {
+            loadArchitecture(architectureSelect.value);
+        } else {
+            renderEmptyArchitecture();
+        }
+    });
+
+    serviceSearch.addEventListener("input", renderServiceCatalog);
+
+    document.getElementById("reloadButton").addEventListener("click", async () => {
+        if (currentArchitectureId) {
+            await loadArchitecture(currentArchitectureId);
+        } else {
+            await loadArchitectureList();
+        }
+    });
+
+    async function initializeWorkspace() {
+        try {
+            await loadServices();
+            await loadArchitectureList();
+            showMessage("Architecture workspace ready.");
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+    initializeWorkspace();
+})();
+</script>
 
 {% endblock %}

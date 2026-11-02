@@ -5,6 +5,13 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+from architecture import (
+    Architecture,
+    create_resource,
+    save_architecture,
+    load_architecture,
+    list_architectures,
+)
 
 
 app = Flask(__name__)
@@ -533,6 +540,174 @@ def reset():
 @app.route("/proposal")
 def proposal():
     return render_template("proposal.html")
+
+
+# ============================================================
+# CLIENT PROPOSAL STUDIO API
+# ============================================================
+
+
+@app.route("/api/architecture/services", methods=["GET"])
+def api_architecture_services():
+    """Return the existing AWS service catalog."""
+
+    if isinstance(SERVICE_RECORDS, dict):
+        records = SERVICE_RECORDS.values()
+    else:
+        records = SERVICE_RECORDS
+
+    services = []
+
+    for service in records:
+        services.append({
+            "id": service.get("id"),
+            "name": service.get("name"),
+            "category": service.get("category", ""),
+            "description": service.get("description", ""),
+        })
+
+    return jsonify(services)
+
+
+@app.route("/api/architectures", methods=["GET", "POST"])
+def api_architectures():
+    """List saved architectures or create a new one."""
+
+    if request.method == "GET":
+        return jsonify(list_architectures(DB))
+
+    data = request.get_json(silent=True) or {}
+
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify({
+            "error": "Architecture name is required."
+        }), 400
+
+    architecture = Architecture(
+        name=name,
+        description=data.get("description", "").strip(),
+        region=data.get("region", "us-east-1"),
+    )
+
+    save_architecture(architecture, DB)
+
+    return jsonify({
+        "architecture_id": architecture.architecture_id,
+        "name": architecture.name,
+        "message": "Architecture created successfully."
+    }), 201
+
+
+@app.route("/api/architectures/<architecture_id>", methods=["GET"])
+def api_get_architecture(architecture_id):
+    """Retrieve a saved architecture."""
+
+    architecture = load_architecture(
+        architecture_id,
+        DB
+    )
+
+    if architecture is None:
+        return jsonify({
+            "error": "Architecture not found."
+        }), 404
+
+    return jsonify({
+        "architecture_id": architecture.architecture_id,
+        "name": architecture.name,
+        "description": architecture.description,
+        "cloud_provider": architecture.cloud_provider,
+        "region": architecture.region,
+        "resources": [
+            {
+                "resource_id": resource.resource_id,
+                "service_id": resource.service_id,
+                "name": resource.name,
+                "configuration": resource.configuration,
+                "region": resource.region,
+                "availability_zone": resource.availability_zone,
+                "vpc_id": resource.vpc_id,
+                "subnet_id": resource.subnet_id,
+                "notes": resource.notes,
+                "position": architecture.metadata.get(
+                    "canvas_positions", {}
+                ).get(resource.resource_id, {"x": 100, "y": 100}),
+            }
+            for resource in architecture.resources
+        ],
+        "connections": [
+            {
+                "connection_id": connection.connection_id,
+                "source_id": connection.source_id,
+                "target_id": connection.target_id,
+                "connection_type": connection.connection_type,
+                "description": connection.description,
+            }
+            for connection in architecture.connections
+        ],
+        "metadata": architecture.metadata,
+    })
+
+
+@app.route(
+    "/api/architectures/<architecture_id>/resources",
+    methods=["POST"]
+)
+def api_add_architecture_resource(architecture_id):
+    """Add an AWS service to an architecture."""
+
+    architecture = load_architecture(
+        architecture_id,
+        DB
+    )
+
+    if architecture is None:
+        return jsonify({
+            "error": "Architecture not found."
+        }), 404
+
+    data = request.get_json(silent=True) or {}
+    service_id = data.get("service_id", "").strip()
+
+    if not service_id:
+        return jsonify({
+            "error": "Service ID is required."
+        }), 400
+
+    try:
+        resource = create_resource(
+            service_id,
+            SERVICE_RECORDS
+        )
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    architecture.add_resource(resource)
+
+    # Give the new resource an initial canvas position.
+    positions = architecture.metadata.setdefault(
+        "canvas_positions", {}
+    )
+
+    positions[resource.resource_id] = {
+        "x": 100 + (len(architecture.resources) - 1) * 40,
+        "y": 100 + (len(architecture.resources) - 1) * 40,
+    }
+
+    save_architecture(architecture, DB)
+
+    return jsonify({
+        "resource_id": resource.resource_id,
+        "service_id": resource.service_id,
+        "name": resource.name,
+        "position": positions[resource.resource_id],
+        "message": "Resource added successfully."
+    }), 201
+
 
 if __name__ == "__main__":
     init()
