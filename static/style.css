@@ -1007,3 +1007,214 @@ footer {
     }
 
 }
+
+
+/* =========================================================
+   PROPOSAL STUDIO — LIGHT THEME
+   Scoped separately from the existing Simulator styling
+   ========================================================= */
+
+body.proposal {
+    --bg: #f5f6f7;
+    --panel: #ffffff;
+    --line: #dce1e5;
+    --text: #202a32;
+    --muted: #687782;
+    --brand-navy: #ffffff;
+
+    background: #f5f6f7;
+    color: #202a32;
+}
+
+body.proposal header {
+    background: #ffffff;
+    border-bottom: 1px solid #dce1e5;
+}
+
+body.proposal .brand {
+    color: #202a32;
+}
+
+body.proposal .local {
+    color: #687782;
+}
+
+body.proposal main {
+    color: #202a32;
+}
+
+body.proposal .panel,
+body.proposal .card {
+    background: #ffffff;
+    border-color: #dce1e5;
+    color: #202a32;
+}
+
+body.proposal footer {
+    color: #687782;
+    border-top: 1px solid #dce1e5;
+}
+
+/* Architecture design canvas */
+
+body.proposal .architecture-canvas {
+    background-color: #ffffff;
+    background-image:
+        linear-gradient(#e9edf0 1px, transparent 1px),
+        linear-gradient(90deg, #e9edf0 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 1px solid #dce1e5;
+    border-radius: 8px;
+    color: #202a32;
+    min-height: 500px;
+    position: relative;
+    overflow: auto;
+}
+
+/* =========================================================
+   PROPOSAL STUDIO — WORKSPACE COMPONENTS
+   ========================================================= */
+
+body.proposal .crumb {
+    color: #687782;
+}
+
+body.proposal .crumb a {
+    color: #426d88;
+}
+
+body.proposal h1,
+body.proposal h2,
+body.proposal h3 {
+    color: #202a32;
+}
+
+body.proposal .intro,
+body.proposal .muted {
+    color: #687782;
+}
+
+.proposal-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin: 35px 0;
+}
+
+.proposal-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 14px;
+    border: 1px solid #dce1e5;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #687782;
+    font-size: 11px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6e9d7b;
+}
+
+.proposal-welcome {
+    margin: 45px 0 25px;
+}
+
+.proposal-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 25px 0 55px;
+}
+
+.proposal-card {
+    background: #ffffff;
+    border: 1px solid #dce1e5;
+    border-radius: 8px;
+    padding: 26px;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.proposal-card h2 {
+    margin: 12px 0;
+}
+
+.proposal-card p {
+    color: #687782;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.proposal-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #dce1e5;
+    border-radius: 7px;
+    color: #426d88;
+    font-size: 24px;
+    margin-bottom: 22px;
+}
+
+.proposal-action {
+    margin-top: auto;
+    padding-top: 20px;
+    color: #426d88;
+    font-size: 12px;
+}
+
+.proposal-workspace {
+    margin: 45px 0;
+}
+
+.proposal-workspace > div:first-child {
+    margin-bottom: 20px;
+}
+
+.proposal-empty-canvas {
+    min-height: 520px;
+    display: grid;
+    place-items: center;
+}
+
+.canvas-placeholder {
+    max-width: 390px;
+    padding: 30px;
+    text-align: center;
+}
+
+.canvas-placeholder h3 {
+    margin: 15px 0 10px;
+}
+
+.canvas-placeholder p {
+    color: #687782;
+    line-height: 1.7;
+    font-size: 13px;
+}
+
+.canvas-symbol {
+    color: #8da2b0;
+    font-size: 42px;
+}
+
+@media (max-width: 850px) {
+    .proposal-options {
+        grid-template-columns: 1fr;
+    }
+
+    .proposal-hero {
+        flex-direction: column;
+    }
+}

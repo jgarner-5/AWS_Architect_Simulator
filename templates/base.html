@@ -1,1 +1,37 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}AWS Architect Simulator{% endblock %}</title><link rel="stylesheet" href="{{url_for('static',filename='style.css')}}"></head><body><header><a class="brand" href="/"><span class="logo">A</span>AWS ARCHITECT <b>SIMULATOR</b></a><span class="local"><i></i> LOCAL TRAINING ENVIRONMENT</span></header><main>{% block content %}{% endblock %}</main><footer>Independent training simulator · Not an official AWS product · No AWS resources are created</footer>{% block scripts %}{% endblock %}</body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}AWS Architect Simulator{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="{% block page_theme %}simulator{% endblock %}">
+
+    <header>
+        <a class="brand" href="/">
+            <span class="logo">A</span>
+            AWS ARCHITECT <b>SIMULATOR</b>
+        </a>
+
+        <span class="local">
+            <i></i> LOCAL TRAINING ENVIRONMENT
+        </span>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        Independent training simulator · Not an official AWS product · No AWS resources are created
+    </footer>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

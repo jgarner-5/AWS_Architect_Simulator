@@ -1,0 +1,108 @@
+
+{% extends "base.html" %}
+
+{% block title %}Client Proposal Studio | AWS Architect{% endblock %}
+
+{% block page_theme %}proposal{% endblock %}
+
+{% block content %}
+
+<div class="crumb">
+    <a href="/">AWS Architect Simulator</a> / Client Proposal Studio
+</div>
+
+<section class="proposal-hero">
+    <div>
+        <div class="eyebrow">PROFESSIONAL WORKSPACE</div>
+        <h1>Client Proposal Studio</h1>
+        <p class="intro">
+            Design, validate, and present cloud architecture solutions
+            tailored to real client requirements.
+        </p>
+    </div>
+
+    <div class="proposal-status">
+        <span class="status-dot"></span>
+        LOCAL WORKSPACE
+    </div>
+</section>
+
+<section class="proposal-welcome">
+    <div>
+        <div class="eyebrow">GET STARTED</div>
+        <h2>What would you like to work on?</h2>
+        <p class="muted">
+            Create a new client engagement or develop an architecture
+            from an existing starting point.
+        </p>
+    </div>
+</section>
+
+<div class="proposal-options">
+
+    <article class="proposal-card">
+        <div class="proposal-icon">＋</div>
+        <div class="eyebrow">NEW ENGAGEMENT</div>
+        <h2>Start a new proposal</h2>
+        <p>
+            Begin with a blank workspace. Capture client information,
+            business objectives, technical requirements, and constraints.
+        </p>
+        <span class="proposal-action">Coming in the next development phase</span>
+    </article>
+
+    <article class="proposal-card">
+        <div class="proposal-icon">◇</div>
+        <div class="eyebrow">ARCHITECTURE DESIGN</div>
+        <h2>Design an AWS solution</h2>
+        <p>
+            Select AWS services, configure infrastructure, define
+            network placement, and build an architecture diagram.
+        </p>
+        <span class="proposal-action">Architecture workspace planned</span>
+    </article>
+
+    <article class="proposal-card">
+        <div class="proposal-icon">▤</div>
+        <div class="eyebrow">CLIENT DELIVERABLES</div>
+        <h2>Build a client proposal</h2>
+        <p>
+            Develop technical recommendations, architecture documentation,
+            cost estimates, implementation phases, and final presentations.
+        </p>
+        <span class="proposal-action">Proposal generation planned</span>
+    </article>
+
+</div>
+
+<section class="proposal-workspace">
+
+    <div>
+        <div class="eyebrow">DESIGN ENVIRONMENT</div>
+        <h2>Architecture canvas</h2>
+        <p class="muted">
+            The engineering canvas will become the central workspace
+            for building and connecting AWS infrastructure components.
+        </p>
+    </div>
+
+    <div class="architecture-canvas proposal-empty-canvas">
+        <div class="canvas-placeholder">
+            <div class="canvas-symbol">◇</div>
+            <h3>Your architecture starts here</h3>
+            <p>
+                AWS services, network components, connections,
+                and deployment configurations will appear here.
+            </p>
+        </div>
+    </div>
+
+</section>
+
+<div class="actions end">
+    <a class="button secondary" href="/">
+        Return to Simulator
+    </a>
+</div>
+
+{% endblock %}

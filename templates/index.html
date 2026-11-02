@@ -1,5 +1,7 @@
 {% extends "base.html" %}{% block content %}
-<section class="hero"><div class="eyebrow">CUSTOMER DISCOVERY → ARCHITECTURE → OUTCOME</div><h1>Design the right cloud.<br><span>Ask better questions.</span></h1><p>Practice real-world AWS solution design by uncovering requirements, evaluating trade-offs, and assembling a defensible architecture.</p><div class="stats"><span><b>01</b> Discover</span><span><b>02</b> Design</span><span><b>03</b> Review</span></div></section>
+<section class="hero"><div class="eyebrow">CUSTOMER DISCOVERY → ARCHITECTURE → OUTCOME</div><h1>Design the right cloud.<br><span>Ask better questions.</span></h1><p>Practice real-world AWS solution design by uncovering requirements, evaluating trade-offs, and assembling a defensible architecture.</p> <a class="button secondary" href="/proposal">
+    Open Client Proposal Studio →
+</a> <div class="stats"><span><b>01</b> Discover</span><span><b>02</b> Design</span><span><b>03</b> Review</span></div></section>
 <div class="sectionhead"><div><div class="eyebrow">MISSION SELECT</div><h2>Available scenario</h2></div><span class="muted">Begin with a customer engagement.</span></div>
 <article class="card"><div class="eyebrow">HEALTHCARE · BEGINNER</div><div class="art"><div class="orbit"></div><div class="cloud">AWS</div><span class="node one">APP</span><span class="node two">DATA</span><span class="node three">NETWORK</span></div><h2>{{s.title}}</h2><p>{{s.brief}}</p><div class="tags">{% for g in s.goals %}<span>{{g}}</span>{% endfor %}</div><a class="button" href="{{url_for('play')}}">Enter scenario ↗</a></article>
 <div class="sectionhead"><div><div class="eyebrow">TRAINING LOG</div><h2>Recent attempts</h2></div></div>

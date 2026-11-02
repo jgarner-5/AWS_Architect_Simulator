@@ -530,6 +530,10 @@ def reset():
 # APPLICATION START
 # ============================================================
 
+@app.route("/proposal")
+def proposal():
+    return render_template("proposal.html")
+
 if __name__ == "__main__":
     init()
     app.run(debug=True, port=5000)
