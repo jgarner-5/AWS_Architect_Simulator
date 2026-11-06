@@ -16,6 +16,8 @@ from architecture.models import (
     Architecture,
     ArchitectureResource,
     ArchitectureConnection,
+    AWSVPC,
+    AWSSubnet,
 )
 
 
@@ -54,6 +56,7 @@ def save_architecture(architecture, db_path):
             for connection in architecture.connections
         ],
         "metadata": architecture.metadata,
+        "vpcs": [asdict(vpc) for vpc in architecture.vpcs],
     }
 
     with sqlite3.connect(db_path) as connection:
@@ -151,8 +154,26 @@ def load_architecture(architecture_id, db_path):
         ArchitectureConnection(**connection)
         for connection in design_data.get("connections", [])
     ]
+    architecture.vpcs = []
+    for vpc_data in design_data.get("vpcs", []):
+        vpc_data = dict(vpc_data)
+        vpc_data["subnets"] = [AWSSubnet(**item) for item in vpc_data.get("subnets", [])]
+        architecture.vpcs.append(AWSVPC(**vpc_data))
 
     return architecture
+
+
+def delete_architecture(architecture_id, db_path):
+    """Delete one saved architecture design without touching simulator data."""
+
+    initialize_storage(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        cursor = connection.execute(
+            "DELETE FROM architecture_designs WHERE architecture_id = ?",
+            (architecture_id,),
+        )
+        return cursor.rowcount > 0
 
 
 def list_architectures(db_path):

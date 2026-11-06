@@ -41,6 +41,23 @@ class ArchitectureConnection:
 
 
 @dataclass
+class AWSSubnet:
+    name: str
+    cidr_block: str
+    subnet_type: str = "private"
+    availability_zone: str = ""
+    subnet_id: str = field(default_factory=lambda: str(uuid4()))
+
+
+@dataclass
+class AWSVPC:
+    name: str
+    cidr_block: str
+    subnets: list[AWSSubnet] = field(default_factory=list)
+    vpc_id: str = field(default_factory=lambda: str(uuid4()))
+
+
+@dataclass
 class Architecture:
     """
     Represents a complete cloud architecture design.
@@ -62,6 +79,7 @@ class Architecture:
     metadata: dict[str, Any] = field(
         default_factory=dict
     )
+    vpcs: list[AWSVPC] = field(default_factory=list)
 
     def add_resource(self, resource: ArchitectureResource):
         self.resources.append(resource)

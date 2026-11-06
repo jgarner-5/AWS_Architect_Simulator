@@ -3,6 +3,8 @@ from architecture.models import (
     Architecture,
     ArchitectureResource,
     ArchitectureConnection,
+    AWSVPC,
+    AWSSubnet,
 )
 
 from architecture.catalog import (
@@ -28,6 +30,8 @@ __all__ = [
     "Architecture",
     "ArchitectureResource",
     "ArchitectureConnection",
+    "AWSVPC",
+    "AWSSubnet",
     "get_service",
     "service_exists",
     "create_resource",

@@ -2,10 +2,26 @@
 {% extends "base.html" %}
 
 {% block title %}Client Proposal Studio | AWS Architect{% endblock %}
-
 {% block page_theme %}proposal{% endblock %}
-
 {% block content %}
+<style>
+.architecture-select-row { display: flex; align-items: center; gap: 8px; }
+.architecture-select-row select { min-width: 240px; }
+#deleteArchitectureButton, #editArchitectureButton { white-space: nowrap; }
+#deleteArchitectureButton:disabled { opacity: .45; cursor: not-allowed; }
+
+.aws-multi-az-lane {
+  border-style: dashed;
+  border-color: #c2410c;
+  background: rgba(255, 247, 237, .9);
+}
+.aws-multi-az-lane .aws-unplaced-title {
+  color: #c2410c;
+}
+
+</style>
+
+<button class="button secondary" id="presentationExitButton" type="button">Exit Presentation</button>
 
 <div class="crumb">
     <a href="/">AWS Architect Simulator</a> / Client Proposal Studio
@@ -20,7 +36,6 @@
             tailored to real client requirements.
         </p>
     </div>
-
     <div class="proposal-status">
         <span class="status-dot"></span>
         LOCAL WORKSPACE
@@ -30,18 +45,23 @@
 <section class="studio-toolbar">
     <div>
         <label for="architectureSelect">CURRENT ARCHITECTURE</label>
-        <select id="architectureSelect">
-            <option value="">Loading saved architectures...</option>
-        </select>
+        <div class="architecture-select-row">
+            <select id="architectureSelect">
+                <option value="">Loading saved architectures...</option>
+            </select>
+            <button class="button secondary" id="editArchitectureButton" type="button" disabled>Edit Settings</button>
+            <button class="button secondary" id="deleteArchitectureButton" type="button" disabled>Delete</button>
+        </div>
     </div>
-
     <button class="button primary" id="newArchitectureButton">
         + New Architecture
     </button>
-
-    <button class="button secondary" id="reloadButton">
-        Reload Design
+    <button class="button secondary" id="loadDemoScenarioButton">
+        Load Guided Clinic Scenario
     </button>
+    <button class="button secondary" id="reloadButton">Reload Design</button>
+    <button class="button secondary" id="fitDiagramButton" type="button">Fit to Screen</button>
+    <button class="button secondary" id="presentationButton" type="button">Presentation View</button>
 </section>
 
 <section class="studio-project-info">
@@ -52,20 +72,10 @@
             Create a new architecture or select an existing design.
         </p>
     </div>
-
     <div class="studio-metadata">
-        <div>
-            <span>REGION</span>
-            <strong id="architectureRegion">—</strong>
-        </div>
-        <div>
-            <span>RESOURCES</span>
-            <strong id="resourceCount">0</strong>
-        </div>
-        <div>
-            <span>CONNECTIONS</span>
-            <strong id="connectionCount">0</strong>
-        </div>
+        <div><span>REGION</span><strong id="architectureRegion">—</strong></div>
+        <div><span>RESOURCES</span><strong id="resourceCount">0</strong></div>
+        <div><span>CONNECTIONS</span><strong id="connectionCount">0</strong></div>
     </div>
 </section>
 
@@ -73,51 +83,136 @@
     Loading architecture workspace...
 </div>
 
+<section class="studio-panel guided-scenario-panel">
+    <div class="eyebrow">YOUR FIRST DESIGN EXERCISE</div>
+    <h2>Harborview Medical: secure patient portal</h2>
+    <p>A medical group needs a patient portal that stays available during an Availability Zone failure. Patient records must remain private, encrypted, monitored, and backed up.</p>
+    <div class="scenario-steps">
+      <div><strong>1. Explore</strong><span>Load the guided scenario and inspect the 12 AWS services, 6 subnets, and existing data flows.</span></div>
+      <div><strong>2. Understand placement</strong><span>Public subnets host the load balancer; application and database resources belong in private subnets.</span></div>
+      <div><strong>3. Experiment</strong><span>Add another service from the catalog, move a resource card, or create a test subnet.</span></div>
+      <div><strong>4. Verify</strong><span>Reload the design. Your infrastructure, connections, and canvas positions should remain saved.</span></div>
+    </div>
+    <p class="muted"><strong>Important:</strong> This is an educational architecture scenario. It does not configure a live AWS account or establish production security.</p>
+</section>
+
 <div class="studio-layout">
-
     <aside class="studio-sidebar">
-
         <section class="studio-panel">
             <div class="eyebrow">AWS SERVICE CATALOG</div>
             <h2>Available services</h2>
-            <p class="muted">
-                Select a service to add it to your architecture.
-            </p>
-
-            <input
-                type="search"
-                id="serviceSearch"
-                placeholder="Search AWS services..."
-                aria-label="Search AWS services"
-            >
-
+            <p class="muted">Select a service to add it to your architecture.</p>
+            <input type="search" id="serviceSearch"
+                   placeholder="Search AWS services..."
+                   aria-label="Search AWS services">
             <div id="serviceCatalog" class="service-catalog">
                 Loading AWS services...
             </div>
         </section>
-
     </aside>
 
     <main class="studio-main">
+        
+<style>
+.infrastructure-panel label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+}
+.infrastructure-panel input,
+.infrastructure-panel select {
+    margin-top: 2px;
+}
+.infrastructure-panel .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+</style>
+
+        <section class="studio-panel infrastructure-panel">
+            <div class="eyebrow">AWS INFRASTRUCTURE</div>
+            <h2>Region, VPCs &amp; subnets</h2>
+            <div style="display:flex; flex-direction:column; gap:16px; margin-top:12px;">
+
+                <div style="border:1px solid #e1e5e8; border-radius:8px; padding:14px; background:#f8fafb;">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#52616b; margin-bottom:8px;">1 · REGION</div>
+                    <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:180px;"><label for="infraRegion">AWS REGION</label><select id="infraRegion"><option>us-east-1</option><option>us-east-2</option><option>us-west-1</option><option>us-west-2</option><option>eu-west-1</option><option>ap-southeast-1</option></select></div>
+                        <button type="button" class="button secondary" id="saveRegionButton">Save Region</button>
+                    </div>
+                </div>
+
+                <div style="border:1px solid #e1e5e8; border-radius:8px; padding:14px; background:#f8fafb;">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#52616b; margin-bottom:8px;">2 · CREATE VPC</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        <div class="field"><label for="vpcName">VPC NAME</label><input id="vpcName" placeholder="Production VPC"></div>
+                        <div class="field"><label for="vpcCidr">VPC CIDR</label><input id="vpcCidr" value="10.0.0.0/16"></div>
+                    </div>
+                    <button type="button" class="button secondary" id="createVpcButton" style="margin-top:10px;">+ Create VPC</button>
+                </div>
+
+                <div style="border:1px solid #dbeafe; border-radius:8px; padding:14px; background:#eff6ff;">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#1e40af; margin-bottom:8px;">3 · CREATE SUBNET</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        <div class="field"><label for="subnetVpc">VPC</label><select id="subnetVpc"></select></div>
+                        <div class="field"><label for="subnetName">SUBNET NAME</label><input id="subnetName" placeholder="Public subnet A"></div>
+                        <div class="field"><label for="subnetCidr">SUBNET CIDR</label><input id="subnetCidr" value="10.0.1.0/24"></div>
+                        <div class="field"><label for="subnetType">SUBNET TYPE</label><select id="subnetType"><option value="public">Public</option><option value="private">Private</option></select></div>
+                        <div class="field"><label for="subnetAz">AVAILABILITY ZONE</label><select id="subnetAz"><option value="a">a</option><option value="b">b</option><option value="c">c</option></select></div>
+                    </div>
+                    <button type="button" class="button secondary" id="createSubnetButton" style="margin-top:10px;">+ Create Subnet</button>
+                </div>
+
+                <div style="border:1px solid #fed7aa; border-radius:8px; padding:14px; background:#fff7ed;">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#c2410c; margin-bottom:8px;">4 · PLACE RESOURCE</div>
+                    <p style="margin:0 0 10px; font-size:12px; color:#9a3412;">Use this section to put an existing resource into a subnet. Do not use the Create Subnet fields above for this.</p>
+                    <div id="placementSuggestion" style="margin:0 0 12px; padding:8px 10px; background:#fff; border:1px solid #fdba74; border-radius:6px; font-size:12px; color:#9a3412;">Suggested next: load an architecture to see guidance.</div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <label for="placementResource" style="margin-bottom:2px;">RESOURCE</label>
+                                <select id="placementResource" style="width:100%;"></select>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <label for="placementVpc" style="margin-bottom:2px;">VPC</label>
+                                <select id="placementVpc" style="width:100%;"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="placementSubnet">SUBNET</label>
+                            <select id="placementSubnet" size="4" aria-describedby="placementSubnetHelp" style="width:100%; min-height:90px;"></select>
+                            <small id="placementSubnetHelp" class="muted" style="display:block; margin-top:4px;">Select one subnet. For Load Balancing only, hold Command (⌘) to select multiple.</small>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <button type="button" class="button primary" id="placeResourceButton">Place Resource</button>
+                        <button type="button" class="button secondary" id="moveEc2PrivateButton" style="background:#c2410c; color:#fff; border-color:#c2410c;">Move EC2 → Private-App-Subnet</button>
+                    </div>
+                </div>
+
+            </div>
+            <div id="infrastructureSummary" class="infrastructure-summary">No VPCs configured yet.</div>
+        </section>
 
         <section class="studio-panel canvas-panel">
-
             <div class="canvas-heading">
                 <div>
                     <div class="eyebrow">DESIGN ENVIRONMENT</div>
-                    <h2>Architecture canvas</h2>
+                    <h2>AWS architecture diagram</h2>
                     <p class="muted">
-                        Your selected AWS infrastructure components.
+                        AWS-style service symbols · drag to arrange · arrows show data flow.
                     </p>
                 </div>
-
-                <span class="canvas-indicator">DESIGN VIEW</span>
+                <div class="diagram-actions"><button type="button" class="button secondary" id="autoLayoutButton">Auto Layout</button><button type="button" class="button secondary" id="saveLayoutButton">Save Layout</button><button type="button" class="button secondary" id="zoomOutButton">−</button><span id="zoomLevel">100%</span><button type="button" class="button secondary" id="zoomInButton">＋</button><span class="canvas-indicator">AWS ARCHITECTURE</span></div>
             </div>
 
-            <div
-                id="architectureCanvas"
-                class="architecture-canvas proposal-editor-canvas"
-            >
+            <div class="diagram-legend"><span class="legend-region">Region</span><span class="legend-vpc">VPC</span><span class="legend-public">Public subnet</span><span class="legend-private">Private subnet</span></div>
+            <div id="architectureCanvas"
+                 class="architecture-canvas proposal-editor-canvas">
                 <div class="canvas-placeholder">
                     <div class="canvas-symbol">◇</div>
                     <h3>Your architecture starts here</h3>
@@ -127,7 +222,49 @@
                     </p>
                 </div>
             </div>
+            <p class="canvas-help">
+                <span>↖</span> Drag a resource card to reposition it.
+                Changes are saved automatically.
+            </p>
+        </section>
 
+        <section class="studio-panel connection-panel">
+            <div class="eyebrow">INFRASTRUCTURE RELATIONSHIPS</div>
+            <h2>Connect resources</h2>
+            <p class="muted">
+                Define how traffic or data moves between AWS components.
+            </p>
+
+            <div class="connection-controls">
+                <div>
+                    <label for="connectionSource">SOURCE RESOURCE</label>
+                    <select id="connectionSource">
+                        <option value="">Select source...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="connectionTarget">DESTINATION RESOURCE</label>
+                    <select id="connectionTarget">
+                        <option value="">Select destination...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="connectionDescription">DESCRIPTION</label>
+                    <input type="text" id="connectionDescription"
+                           placeholder="Example: Application traffic">
+                </div>
+                <button type="button" class="button primary"
+                        id="addConnectionButton">
+                    + Connect Resources
+                </button>
+            </div>
+
+            <div class="connection-list">
+                <h3>Existing connections</h3>
+                <div id="connectionList">
+                    <p class="muted">No connections created yet.</p>
+                </div>
+            </div>
         </section>
 
         <section class="studio-panel resource-details">
@@ -137,38 +274,25 @@
                 <p class="muted">No resources added yet.</p>
             </div>
         </section>
-
     </main>
-
 </div>
 
 <div class="actions end">
-    <a class="button secondary" href="/">
-        Return to Simulator
-    </a>
+    <a class="button secondary" href="/">Return to Simulator</a>
 </div>
 
-<!-- New architecture dialog -->
 <div id="newArchitectureDialog" class="studio-dialog" hidden>
     <form id="newArchitectureForm" class="studio-dialog-card">
-
         <div class="eyebrow">NEW DESIGN</div>
         <h2>Create architecture</h2>
 
         <label for="newArchitectureName">Architecture name</label>
-        <input
-            type="text"
-            id="newArchitectureName"
-            required
-            placeholder="Example: Medical Practice Cloud"
-        >
+        <input type="text" id="newArchitectureName" required
+               placeholder="Example: Medical Practice Cloud">
 
         <label for="newArchitectureDescription">Description</label>
-        <textarea
-            id="newArchitectureDescription"
-            rows="3"
-            placeholder="Describe the purpose of this architecture."
-        ></textarea>
+        <textarea id="newArchitectureDescription" rows="3"
+                  placeholder="Describe the purpose of this architecture."></textarea>
 
         <label for="newArchitectureRegion">AWS Region</label>
         <select id="newArchitectureRegion">
@@ -179,325 +303,384 @@
         </select>
 
         <div class="dialog-actions">
-            <button type="button" class="button secondary" id="cancelNewArchitecture">
-                Cancel
-            </button>
+            <button type="button" class="button secondary"
+                    id="cancelNewArchitecture">Cancel</button>
             <button type="submit" class="button primary">
                 Create Architecture
             </button>
         </div>
+    </form>
+</div>
 
+<div id="editArchitectureDialog" class="studio-dialog" hidden>
+    <form id="editArchitectureForm" class="studio-dialog-card">
+        <div class="eyebrow">EDIT DESIGN</div>
+        <h2>Edit architecture settings</h2>
+        <label for="editArchitectureName">Architecture name</label>
+        <input type="text" id="editArchitectureName" required>
+        <label for="editArchitectureDescription">Description</label>
+        <textarea id="editArchitectureDescription" rows="3"></textarea>
+        <label for="editArchitectureProvider">Cloud provider</label>
+        <select id="editArchitectureProvider"><option>AWS</option><option>Azure</option><option>Google Cloud</option><option>Other</option></select>
+        <label for="editArchitectureRegion">Region</label>
+        <select id="editArchitectureRegion">
+            <option value="us-east-1">US East (N. Virginia)</option><option value="us-east-2">US East (Ohio)</option>
+            <option value="us-west-1">US West (N. California)</option><option value="us-west-2">US West (Oregon)</option>
+        </select>
+        <div class="dialog-actions">
+            <button type="button" class="button secondary" id="cancelEditArchitecture">Cancel</button>
+            <button type="submit" class="button primary">Save Settings</button>
+        </div>
     </form>
 </div>
 
 <style>
 .studio-toolbar {
-    display: flex;
-    align-items: end;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 20px;
-    margin: 24px 0;
-    background: #fff;
-    border: 1px solid #e1e5e8;
-    border-radius: 10px;
+    display:flex; align-items:end; flex-wrap:wrap; gap:12px;
+    padding:20px; margin:24px 0; background:#fff;
+    border:1px solid #e1e5e8; border-radius:10px;
 }
-
-.studio-toolbar > div {
-    flex: 1;
-    min-width: 220px;
+.studio-toolbar>div {flex:1; min-width:220px;}
+.studio-toolbar label,.studio-dialog-card label {
+    display:block; margin-bottom:7px; color:#66727a;
+    font-size:11px; font-weight:700; letter-spacing:.08em;
 }
-
-.studio-toolbar label,
-.studio-dialog-card label {
-    display: block;
-    margin-bottom: 7px;
-    color: #66727a;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
+.studio-toolbar select,.studio-dialog-card input,
+.studio-dialog-card textarea,.studio-dialog-card select,#serviceSearch {
+    width:100%; padding:11px 12px; border:1px solid #d9dfe3;
+    border-radius:6px; background:#fff; color:#202a30; font:inherit;
 }
-
-.studio-toolbar select,
-.studio-dialog-card input,
-.studio-dialog-card textarea,
-.studio-dialog-card select,
-#serviceSearch {
-    width: 100%;
-    padding: 11px 12px;
-    border: 1px solid #d9dfe3;
-    border-radius: 6px;
-    background: #fff;
-    color: #202a30;
-    font: inherit;
-}
-
 .studio-project-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 24px;
-    padding: 22px 0;
-    border-bottom: 1px solid #e1e5e8;
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:24px; padding:22px 0;
+    border-bottom:1px solid #e1e5e8;
 }
-
-.studio-project-info h2 {
-    margin: 5px 0;
-}
-
-.studio-metadata {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 26px;
-}
-
-.studio-metadata div {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
+.studio-project-info h2 {margin:5px 0;}
+.studio-metadata {display:flex; flex-wrap:wrap; gap:26px;}
+.studio-metadata div {display:flex; flex-direction:column; gap:5px;}
 .studio-metadata span {
-    color: #7b878e;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
+    color:#7b878e; font-size:10px; font-weight:700; letter-spacing:.08em;
 }
-
-.studio-metadata strong {
-    font-size: 15px;
-}
-
+.studio-metadata strong {font-size:15px;}
 .studio-message {
-    margin: 16px 0;
-    padding: 11px 14px;
-    border-radius: 6px;
-    background: #edf2f5;
-    color: #34434b;
-    font-size: 13px;
+    margin:16px 0; padding:11px 14px; border-radius:6px;
+    background:#edf2f5; color:#34434b; font-size:13px;
 }
-
-.studio-message.error {
-    background: #fbecec;
-    color: #922f2f;
-}
-
+.studio-message.error {background:#fbecec; color:#922f2f;}
 .studio-layout {
-    display: grid;
-    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-    gap: 20px;
-    margin: 20px 0;
+    display:grid; grid-template-columns:minmax(240px,300px) minmax(0,1fr);
+    gap:20px; margin:20px 0;
 }
-
 .studio-panel {
-    padding: 20px;
-    background: #fff;
-    border: 1px solid #e1e5e8;
-    border-radius: 10px;
+    padding:20px; background:#fff;
+    border:1px solid #e1e5e8; border-radius:10px;
 }
-
-.studio-panel h2 {
-    margin: 7px 0;
-}
-
-.studio-sidebar,
-.studio-main {
-    min-width: 0;
-}
-
-.studio-main {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-#serviceSearch {
-    margin: 12px 0;
-}
-
-.service-category {
-    margin-top: 18px;
-}
-
+.studio-panel h2 {margin:7px 0;}
+.studio-sidebar,.studio-main {min-width:0;}
+.studio-main {display:flex; flex-direction:column; gap:20px;}
+#serviceSearch {margin:12px 0;}
+.service-category {margin-top:18px;}
 .service-category h3 {
-    padding-bottom: 7px;
-    border-bottom: 1px solid #e7eaec;
-    color: #69767d;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
+    padding-bottom:7px; border-bottom:1px solid #e7eaec;
+    color:#69767d; font-size:11px; text-transform:uppercase;
+    letter-spacing:.08em;
 }
-
 .service-option {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 0;
-    border-bottom: 1px solid #edf0f2;
+    display:flex; justify-content:space-between; align-items:center;
+    gap:8px; padding:10px 0; border-bottom:1px solid #edf0f2;
 }
-
-.service-option strong {
-    display: block;
-    font-size: 13px;
-}
-
-.service-option small {
-    color: #7c878d;
-    font-size: 11px;
-}
-
+.service-option strong {display:block; font-size:13px;}
+.service-option small {color:#7c878d; font-size:11px;}
 .service-option button {
-    flex-shrink: 0;
-    padding: 6px 9px;
-    border: 1px solid #ccd5da;
-    border-radius: 5px;
-    background: #fff;
-    color: #344d5c;
-    cursor: pointer;
-    font-size: 11px;
+    flex-shrink:0; padding:6px 9px; border:1px solid #ccd5da;
+    border-radius:5px; background:#fff; color:#344d5c;
+    cursor:pointer; font-size:11px;
 }
-
-.service-option button:hover {
-    background: #edf3f6;
-}
-
+.service-option button:hover {background:#edf3f6;}
 .canvas-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 16px;
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:12px; margin-bottom:16px;
 }
-
 .canvas-indicator {
-    padding: 6px 9px;
-    border-radius: 4px;
-    background: #edf2f5;
-    color: #566873;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
+    padding:6px 9px; border-radius:4px; background:#edf2f5;
+    color:#566873; font-size:10px; font-weight:700; letter-spacing:.08em;
 }
-
 .proposal-editor-canvas {
-    min-height: 500px;
-    padding: 24px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-    align-content: start;
-    align-items: start;
-    gap: 16px;
-    border: 1px solid #dce2e6;
-    border-radius: 7px;
-    background-color: #fbfcfd;
+    position:relative; isolation:isolate;
+    min-height:700px; overflow:auto;
+    border:1px solid #dce2e6; border-radius:7px;
+    background-color:#fbfcfd;
     background-image:
-        linear-gradient(#e9edf0 1px, transparent 1px),
-        linear-gradient(90deg, #e9edf0 1px, transparent 1px);
-    background-size: 20px 20px;
+        linear-gradient(#e9edf0 1px,transparent 1px),
+        linear-gradient(90deg,#e9edf0 1px,transparent 1px);
+    background-size:20px 20px;
 }
-
-.proposal-editor-canvas .canvas-placeholder {
-    grid-column: 1 / -1;
-    align-self: center;
-    justify-self: center;
-    max-width: 350px;
-    padding: 50px 20px;
-    text-align: center;
+.architecture-connections-svg {
+    position:absolute; left:0; top:0;
+    pointer-events:none; z-index:1; overflow:visible;
 }
-
+.architecture-connections-svg path {
+    fill:none; stroke:#66899c; stroke-width:2.5;
+    stroke-linecap:round; stroke-linejoin:round;
+}
+.infrastructure-summary {margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+.infra-vpc {border:1px solid #8ca7b5;border-radius:7px;padding:12px;background:#f1f6f8;color:#304653;font-size:12px;}
+.infra-subnet {margin:8px 0 0 12px;padding:8px;border-left:3px solid #6c9b82;background:#fff;border-radius:3px;}
+.infra-subnet.public {border-left-color:#d49a4a;}
 .architecture-resource-card {
-    min-width: 0;
-    padding: 16px;
-    border: 1px solid #cbd6dc;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 2px 5px rgba(20, 40, 50, .06);
+    position:absolute; z-index:2;
+    width:260px; min-height:130px; padding:16px;
+    border:1px solid #cbd6dc; border-radius:8px;
+    background:#fff; box-shadow:0 2px 5px rgba(20,40,50,.08);
+    cursor:grab; user-select:none; touch-action:none;
 }
-
+.architecture-resource-card:active {cursor:grabbing;}
+.architecture-resource-card.dragging {
+    z-index:5; box-shadow:0 8px 22px rgba(20,40,50,.18);
+    border-color:#66899c;
+}
 .architecture-resource-card .resource-type {
-    color: #75848c;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    color:#75848c; font-size:10px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase;
 }
-
 .architecture-resource-card h3 {
-    margin: 8px 0;
-    color: #24333b;
-    font-size: 14px;
+    margin:8px 0; color:#24333b; font-size:14px;
 }
-
 .architecture-resource-card .resource-id {
-    overflow-wrap: anywhere;
-    color: #8a969c;
-    font-size: 10px;
+    overflow-wrap:anywhere; color:#8a969c; font-size:10px;
 }
 
+/* AWS-style architecture icon nodes */
+.aws-service-node{width:250px;min-height:112px;padding:12px 14px;display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #cbd6dc;border-left:4px solid var(--service-accent,#ec7211);border-radius:7px;box-shadow:0 3px 9px rgba(20,40,50,.10)}
+.aws-service-node .aws-icon-frame{width:58px;height:58px;flex:0 0 58px;border-radius:9px;background:var(--service-tint,#fff3e8);display:grid;place-items:center}
+.aws-service-node .aws-icon-frame img{width:46px;height:46px;object-fit:contain}
+.aws-service-node .aws-node-copy{min-width:0}
+.aws-service-node .resource-type{font-size:9px;color:#687983;letter-spacing:.09em;font-weight:800;text-transform:uppercase}
+.aws-service-node h3{font-size:13px;line-height:1.25;margin:5px 0;color:#202f38}
+.aws-service-node .resource-id{font-size:9px;color:#89969c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:155px}
+.service-option{align-items:center}
+.service-option .catalog-icon{width:34px;height:34px;flex:0 0 34px;object-fit:contain;padding:3px;border-radius:6px;background:#fff5eb}
+.service-option .catalog-copy{flex:1;min-width:0}
+.canvas-heading .canvas-indicator{background:#fff1e5;color:#9a4c0b}
+
+.canvas-placeholder {
+    padding:60px 24px; text-align:center; color:#71808a;
+}
+.canvas-placeholder h3 {color:#34434b;}
+.canvas-help {margin:10px 2px 0; color:#7b878e; font-size:12px;}
+.canvas-help span {font-weight:bold;}
 .resource-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 11px 0;
-    border-bottom: 1px solid #edf0f2;
-    font-size: 13px;
+    display:flex; justify-content:space-between; gap:12px;
+    padding:11px 0; border-bottom:1px solid #edf0f2; font-size:13px;
 }
-
-.resource-row small {
-    color: #7c878d;
+.resource-row small {color:#7c878d;}
+.connection-controls {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px; align-items:end; margin-top:18px;
 }
-
+.connection-controls>div {min-width:0;}
+.connection-controls label {
+    display:block; margin-bottom:7px; color:#66727a;
+    font-size:10px; font-weight:700; letter-spacing:.08em;
+}
+.connection-controls select,.connection-controls input {
+    width:100%; padding:10px; border:1px solid #d9dfe3;
+    border-radius:6px; background:#fff; color:#202a30; font:inherit;
+}
+.connection-list {margin-top:24px;}
+.connection-list h3 {font-size:14px; margin-bottom:10px;}
+.connection-item {
+    display:flex; justify-content:space-between; flex-wrap:wrap;
+    gap:8px; padding:12px 0; border-top:1px solid #edf0f2;
+    font-size:13px;
+}
+.connection-item strong {color:#344d5c;}
+.connection-item small {color:#7c878d;}
 .studio-dialog {
-    position: fixed;
-    z-index: 1000;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-    background: rgba(20, 30, 35, .55);
+    position:fixed; z-index:1000; inset:0; display:grid;
+    place-items:center; padding:20px; background:rgba(20,30,35,.55);
 }
-
-.studio-dialog[hidden] {
-    display: none;
-}
-
+.studio-dialog[hidden] {display:none;}
 .studio-dialog-card {
-    width: min(100%, 460px);
-    padding: 26px;
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 15px 50px rgba(0, 0, 0, .2);
+    width:min(100%,460px); padding:26px; border-radius:10px;
+    background:#fff; box-shadow:0 15px 50px rgba(0,0,0,.2);
 }
-
-.studio-dialog-card h2 {
-    margin: 8px 0 20px;
-}
-
-.studio-dialog-card input,
-.studio-dialog-card textarea,
-.studio-dialog-card select {
-    margin-bottom: 16px;
-}
-
+.studio-dialog-card h2 {margin:8px 0 20px;}
+.studio-dialog-card input,.studio-dialog-card textarea,
+.studio-dialog-card select {margin-bottom:16px;}
 .dialog-actions {
+    display:flex; justify-content:flex-end; gap:10px; margin-top:8px;
+}
+@media(max-width:850px) {
+    .studio-layout {grid-template-columns:1fr;}
+    .studio-project-info {align-items:flex-start;}
+}
+@media(max-width:600px) {
+    .connection-controls {grid-template-columns:1fr;}
+}
+
+.guided-scenario-panel { margin: 18px 0; }
+.guided-scenario-panel > p { max-width: 1050px; }
+.scenario-steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:16px 0; }
+.scenario-steps > div { background:#f5f6f7; border:1px solid #e2e5e8; border-radius:10px; padding:13px; display:flex; flex-direction:column; gap:6px; }
+.scenario-steps span { color:#59636d; font-size:.92rem; line-height:1.45; }
+
+
+/* Phase 4 editor refinement: compact nodes, retained icon scale, presentation mode */
+.architecture-resource-card.aws-service-node {
+    width: 132px !important;
+    min-height: 104px !important;
+    padding: 9px 10px !important;
+    gap: 7px !important;
+    border-radius: 10px !important;
+}
+.architecture-resource-card .aws-icon-frame {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 8px;
+    align-items: center;
+    justify-content: center;
+}
+.architecture-resource-card .aws-icon-frame img {
+    width: 52px !important;
+    height: 52px !important;
+    object-fit: contain;
+}
+.architecture-resource-card .aws-node-copy h3,
+.architecture-resource-card h3 {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    margin: 2px 0 !important;
+}
+.architecture-resource-card .resource-id { font-size: 9px !important; }
+body.proposal.presentation-mode .crumb,
+body.proposal.presentation-mode .proposal-hero,
+body.proposal.presentation-mode .studio-toolbar,
+body.proposal.presentation-mode .studio-project-info,
+body.proposal.presentation-mode .studio-message,
+body.proposal.presentation-mode .guided-scenario-panel,
+body.proposal.presentation-mode .studio-sidebar,
+body.proposal.presentation-mode .connection-panel,
+body.proposal.presentation-mode .resource-summary,
+body.proposal.presentation-mode footer {
+    display: none !important;
+}
+body.proposal.presentation-mode .studio-workspace,
+body.proposal.presentation-mode .architecture-workspace,
+body.proposal.presentation-mode .architecture-canvas-wrap {
+    display: block !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    background: #fff !important;
+}
+body.proposal.presentation-mode .architecture-canvas-wrap {
+    overflow: auto !important;
+}
+body.proposal.presentation-mode .architecture-canvas {
+    min-width: 1200px;
+    min-height: 800px;
+}
+#presentationExitButton {
+    display: none;
+    position: fixed;
+    z-index: 100001;
+    top: 14px;
+    right: 18px;
+}
+body.proposal.presentation-mode #presentationExitButton { display: inline-flex; }
+
+
+/* Hierarchical AWS architecture canvas */
+.diagram-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.diagram-actions #zoomLevel{font-size:11px;font-weight:700;color:#52636d;min-width:42px;text-align:center}
+.diagram-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px;font-size:10px;color:#53636c}
+.diagram-legend span{padding:4px 8px;border-radius:4px;border:1px solid #cbd5dc;background:#fff}
+.diagram-legend .legend-region{border-color:#657d91}.diagram-legend .legend-vpc{border-color:#6c91b1}.diagram-legend .legend-public{background:#fff7e9;border-color:#d6a55f}.diagram-legend .legend-private{background:#eef5fb;border-color:#80a8ca}
+.proposal-editor-canvas{min-width:100%;min-height:760px;overflow:auto;transform-origin:top left}
+.aws-region-boundary{position:absolute;left:24px;top:24px;border:2px solid #647b8d;border-radius:14px;background:rgba(238,243,247,.62);padding:42px 18px 18px;box-sizing:border-box;z-index:0}
+.aws-region-title{position:absolute;left:16px;top:10px;display:flex;align-items:center;gap:8px;font-weight:800;color:#314b5c;font-size:14px}
+.aws-region-title img{width:28px;height:28px;object-fit:contain}
+.aws-vpc-boundary{position:absolute;border:2px solid #6e98b7;border-radius:12px;background:rgba(236,245,250,.72);padding:42px 14px 16px;box-sizing:border-box}
+.aws-vpc-title{position:absolute;left:12px;top:9px;display:flex;gap:8px;align-items:center;font-weight:800;color:#315d79;font-size:13px}
+.aws-vpc-title img{width:26px;height:26px;object-fit:contain}
+.aws-az-column{position:absolute;top:42px;bottom:14px;border:1px dashed #9eabb4;border-radius:9px;background:rgba(255,255,255,.55);box-sizing:border-box;padding:34px 10px 10px}
+.aws-az-title{position:absolute;left:10px;top:8px;font-size:11px;font-weight:800;color:#5a6870}
+.aws-subnet-boundary{position:absolute;border:1.5px solid #80a8ca;border-radius:8px;background:rgba(235,244,251,.78);box-sizing:border-box;padding:30px 8px 8px}
+.aws-subnet-boundary.public{border-color:#d3a15d;background:rgba(255,247,232,.82)}
+.aws-subnet-title{position:absolute;left:9px;top:7px;font-size:10px;font-weight:800;color:#486577;max-width:calc(100% - 18px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aws-subnet-boundary.public .aws-subnet-title{color:#8b5b1b}
+.aws-unplaced-boundary{position:absolute;border:1px dashed #b9c2c8;border-radius:8px;background:rgba(250,250,250,.8);padding:28px 12px 12px;box-sizing:border-box}
+.aws-unplaced-title{position:absolute;left:12px;top:8px;font-size:11px;font-weight:800;color:#69777f}
+.aws-subnet-boundary{overflow:visible!important}
+.aws-vpc-level-lane{border-style:dotted;background:rgba(247,249,250,.88)}
+.aws-regional-lane{background:rgba(249,250,251,.88)}
+.aws-subnet-title{gap:6px;max-width:calc(100% - 18px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aws-az-column{overflow:visible!important}
+
+.architecture-resource-card.aws-service-node{width:126px!important;min-height:90px!important;height:90px;padding:7px 8px!important;gap:5px!important;display:flex;flex-direction:column;justify-content:center;text-align:center;cursor:grab}
+.architecture-resource-card .aws-icon-frame{width:54px!important;height:54px!important;min-width:54px!important;flex:0 0 54px!important;background:transparent!important;margin:0 auto}
+.architecture-resource-card .aws-icon-frame img{width:52px!important;height:52px!important}
+.architecture-resource-card .aws-node-copy{width:100%;}
+.architecture-resource-card .resource-type{font-size:8px!important;line-height:1.1}
+.architecture-resource-card .aws-node-copy h3{font-size:11px!important;line-height:1.15!important;margin:2px 0!important;max-height:25px;overflow:hidden}
+.architecture-resource-card .resource-id{display:none}
+.architecture-resource-card{box-shadow:0 2px 5px rgba(20,40,50,.09)}
+.aws-association-marker {
+  border-style: dashed !important;
+  border-width: 1.5px !important;
+  box-shadow: 0 2px 6px rgba(20,40,50,.12) !important;
+}
+.aws-association-marker .resource-id {
+  display: block !important;
+  font-size: 8px !important;
+  color: #64748b !important;
+  margin-top: 1px !important;
 }
 
-@media (max-width: 850px) {
-    .studio-layout {
-        grid-template-columns: 1fr;
-    }
+body.proposal.presentation-mode .crumb,body.proposal.presentation-mode .proposal-hero,body.proposal.presentation-mode .studio-toolbar,body.proposal.presentation-mode .studio-project-info,body.proposal.presentation-mode .studio-message,body.proposal.presentation-mode .guided-scenario-panel,body.proposal.presentation-mode .studio-sidebar,body.proposal.presentation-mode .infrastructure-panel,body.proposal.presentation-mode .connection-panel,body.proposal.presentation-mode .resource-summary,body.proposal.presentation-mode footer{display:none!important}
+body.proposal.presentation-mode .studio-layout{display:block!important;margin:0!important;padding:0!important;width:100vw!important}
+body.proposal.presentation-mode .studio-main{width:100vw!important;margin:0!important;padding:0!important}
+body.proposal.presentation-mode .canvas-panel{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;margin:0!important;padding:14px!important;z-index:99990!important;overflow:hidden!important;border:0!important;border-radius:0!important}
+body.proposal.presentation-mode .canvas-panel .canvas-heading{margin:0 0 8px}
+body.proposal.presentation-mode .canvas-panel .canvas-heading h2{font-size:16px;margin:0}
+body.proposal.presentation-mode .architecture-canvas{height:calc(100vh - 92px)!important;max-height:none!important;min-height:0!important;width:100%!important}
+body.proposal.presentation-mode #presentationExitButton{display:inline-flex!important;position:fixed;right:18px;top:12px;z-index:100001}
+@media(max-width:800px){.aws-service-node{width:116px!important}.aws-region-boundary{left:10px!important}.diagram-actions{justify-content:flex-start}}
 
-    .studio-project-info {
-        align-items: flex-start;
-    }
-}
+/* Phase 4 layout refinement: clear hierarchy headers and compact service nodes */
+.aws-region-boundary{background:rgba(239,244,248,.20)!important;padding:54px 18px 20px!important;overflow:visible}
+.aws-region-title{background:#fff;padding:4px 10px;border:1px solid #cbd6de;border-radius:6px;z-index:5}
+.aws-vpc-boundary{background:rgba(229,240,248,.18)!important;padding-top:48px!important;overflow:visible}
+.aws-vpc-title{background:#f7fbfe;padding:4px 9px;border-radius:5px;z-index:4}
+.aws-az-column{background:rgba(255,255,255,.50)!important;padding-top:36px!important;overflow:visible}
+.aws-az-title{background:#fff;padding:4px 8px;border:1px solid #d7e0e6;border-radius:5px;z-index:3}
+.aws-subnet-boundary{padding:34px 8px 8px!important}
+.aws-subnet-title{display:flex;align-items:center;background:rgba(255,255,255,.92);padding:3px 6px;border-radius:4px;z-index:2}
+.aws-subnet-title img{width:18px;height:18px;flex:0 0 18px}
+.architecture-resource-card.aws-service-node{width:132px!important;height:88px!important;min-height:88px!important;padding:4px 6px!important;gap:2px!important;z-index:8}
+.architecture-resource-card .aws-icon-frame{width:54px!important;height:54px!important;min-width:54px!important;flex:0 0 54px!important}
+.architecture-resource-card .aws-icon-frame img{width:52px!important;height:52px!important;object-fit:contain}
+.architecture-resource-card .aws-node-copy h3{font-size:10px!important;line-height:1.1!important;max-height:22px!important}
+.architecture-connections-svg{z-index:6!important;overflow:visible;pointer-events:none}
+.architecture-connections-svg path{stroke:#557f96;stroke-width:2.2;fill:none}
+
+
+
+/* Phase 4B fix: let hierarchy labels sit above connector lines, boundaries below them */
+.aws-region-boundary{z-index:auto!important}
+.aws-region-title,.aws-vpc-title,.aws-az-title,.aws-subnet-title,.aws-unplaced-title{z-index:7!important}
+.aws-subnet-title{background:rgba(255,255,255,.97)!important}
+.aws-unplaced-title{background:rgba(255,255,255,.97);padding:2px 6px;border-radius:4px}
+
+.aws-unplaced-boundary:not(.aws-regional-lane):not(.aws-vpc-level-lane){background:rgba(255,249,239,.9);border-color:#c69a62}
+.aws-unplaced-boundary:not(.aws-regional-lane):not(.aws-vpc-level-lane) .aws-unplaced-title{color:#855b2b}
 </style>
 
 <script>
@@ -507,20 +690,45 @@
     let currentArchitectureId = null;
     let allServices = [];
     let currentResources = [];
+    let currentConnections = [];
+    let currentPositions = {};
+    let resourceContainers = {};
+    let currentVpcs = [];
+    let multiAzAssociations = [];
+    let subnetBoxes = {};
+    let dragState = null;
+    let diagramZoom = 1;
+    // Services whose scope is regional/global rather than subnet-hosted. They always
+    // render in the regional lane, outside VPC/AZ boundaries, whatever stale metadata says.
+    const regionalGlobalServiceIds = new Set([
+        "route53", "waf", "s3", "iam", "kms", "cloudwatch", "cloudtrail", "backup", "config", "sns", "sqs"
+    ]);
+    const isRegionalGlobal = resource =>
+        regionalGlobalServiceIds.has(String(resource.service_id || "").toLowerCase());
+    let saveTimer = null;
+    let pendingSave = false;
 
-    const architectureSelect = document.getElementById("architectureSelect");
-    const architectureName = document.getElementById("architectureName");
-    const architectureDescription = document.getElementById("architectureDescription");
-    const architectureRegion = document.getElementById("architectureRegion");
-    const resourceCount = document.getElementById("resourceCount");
-    const connectionCount = document.getElementById("connectionCount");
-    const serviceCatalog = document.getElementById("serviceCatalog");
-    const serviceSearch = document.getElementById("serviceSearch");
-    const architectureCanvas = document.getElementById("architectureCanvas");
-    const resourceList = document.getElementById("resourceList");
-    const studioMessage = document.getElementById("studioMessage");
-    const dialog = document.getElementById("newArchitectureDialog");
-    const newArchitectureForm = document.getElementById("newArchitectureForm");
+    const $ = id => document.getElementById(id);
+
+    const architectureSelect = $("architectureSelect");
+    const deleteArchitectureButton = $("deleteArchitectureButton");
+    const editArchitectureButton = $("editArchitectureButton");
+    const architectureName = $("architectureName");
+    const architectureDescription = $("architectureDescription");
+    const architectureRegion = $("architectureRegion");
+    const resourceCount = $("resourceCount");
+    const connectionCount = $("connectionCount");
+    const serviceCatalog = $("serviceCatalog");
+    const serviceSearch = $("serviceSearch");
+    const architectureCanvas = $("architectureCanvas");
+    const resourceList = $("resourceList");
+    const studioMessage = $("studioMessage");
+    const dialog = $("newArchitectureDialog");
+    const newArchitectureForm = $("newArchitectureForm");
+    const connectionSource = $("connectionSource");
+    const connectionTarget = $("connectionTarget");
+    const connectionDescription = $("connectionDescription");
+    const connectionList = $("connectionList");
 
     function showMessage(message, isError = false) {
         studioMessage.textContent = message;
@@ -567,18 +775,18 @@
             architectureSelect.appendChild(option);
         });
 
-        if (selectId) {
-            architectureSelect.value = selectId;
-        }
+        if (selectId) architectureSelect.value = selectId;
 
         if (architectureSelect.value) {
             await loadArchitecture(architectureSelect.value);
-        } else if (architectures.length > 0) {
+        } else if (architectures.length) {
             await loadArchitecture(architectures[0].architecture_id);
         } else {
             currentArchitectureId = null;
             renderEmptyArchitecture();
         }
+        deleteArchitectureButton.disabled = !architectureSelect.value;
+        editArchitectureButton.disabled = !architectureSelect.value;
     }
 
     async function loadArchitecture(id) {
@@ -589,16 +797,35 @@
 
             currentArchitectureId = design.architecture_id;
             currentResources = design.resources || [];
+            currentConnections = design.connections || [];
+            currentVpcs = design.vpcs || [];
+            renderInfrastructure();
+            currentPositions = {};
+
+            currentResources.forEach((resource, index) => {
+                const position = resource.position || {
+                    x: 80 + (index % 3) * 320,
+                    y: 80 + Math.floor(index / 3) * 190
+                };
+
+                currentPositions[resource.resource_id] = {
+                    x: Number(position.x) || 0,
+                    y: Number(position.y) || 0
+                };
+            });
 
             architectureName.textContent = design.name;
             architectureDescription.textContent =
                 design.description || "No description provided.";
             architectureRegion.textContent = design.region || "—";
             resourceCount.textContent = currentResources.length;
-            connectionCount.textContent = (design.connections || []).length;
+            connectionCount.textContent = currentConnections.length;
 
             renderCanvas();
             renderResourceList();
+            renderConnectionControls();
+            updatePlacementSuggestion();
+            renderConnectionList();
 
             showMessage(`Loaded architecture: ${design.name}`);
         } catch (error) {
@@ -606,20 +833,48 @@
         }
     }
 
+    // Official AWS Architecture SVG artwork is bundled locally.
+    const officialIconMap = {
+        ec2:"ec2", rds:"rds", s3:"s3", alb:"alb", waf:"waf",
+        route53:"route53", autoscaling:"autoscaling", cloudwatch:"cloudwatch",
+        cloudtrail:"cloudtrail", backup:"backup", iam:"iam", kms:"kms",
+        lambda:"lambda", sns:"sns", sqs:"sqs", "api-gateway":"api-gateway",
+        config:"config"
+    };
+    function serviceIconPath(serviceId) {
+        const key = officialIconMap[serviceId] || "default";
+        return `/static/aws-icons/${key}.svg`;
+    }
+
+    function serviceAccent(id) {
+        if (["iam","kms","waf","cloudtrail","config"].includes(id)) return "#a166b5";
+        if (["s3","backup"].includes(id)) return "#3f8f75";
+        if (["rds"].includes(id)) return "#3b78b5";
+        if (["vpc","alb","route53"].includes(id)) return "#8b6bb1";
+        if (["cloudwatch"].includes(id)) return "#d18a2e";
+        return "#ec7211";
+    }
+    function serviceTint(id) {
+        if (["iam","kms","waf","cloudtrail","config"].includes(id)) return "#f5eff8";
+        if (["s3","backup"].includes(id)) return "#edf7f2";
+        if (["rds"].includes(id)) return "#edf4fb";
+        if (["vpc","alb","route53"].includes(id)) return "#f3eff8";
+        if (["cloudwatch"].includes(id)) return "#fff6e9";
+        return "#fff3e8";
+    }
+
     function renderServiceCatalog() {
         const searchTerm = serviceSearch.value.trim().toLowerCase();
 
-        const filtered = allServices.filter(service => {
-            return (
-                service.name.toLowerCase().includes(searchTerm) ||
-                service.category.toLowerCase().includes(searchTerm) ||
-                service.description.toLowerCase().includes(searchTerm)
-            );
-        });
+        const filtered = allServices.filter(service =>
+            service.name.toLowerCase().includes(searchTerm) ||
+            service.category.toLowerCase().includes(searchTerm) ||
+            service.description.toLowerCase().includes(searchTerm)
+        );
 
         serviceCatalog.replaceChildren();
 
-        if (filtered.length === 0) {
+        if (!filtered.length) {
             serviceCatalog.textContent = "No matching AWS services found.";
             return;
         }
@@ -644,8 +899,12 @@
                 const row = document.createElement("div");
                 row.className = "service-option";
 
+                const icon = document.createElement("img");
+                icon.className = "catalog-icon";
+                icon.src = serviceIconPath(service.id);
+                icon.alt = "";
                 const details = document.createElement("div");
-
+                details.className = "catalog-copy";
                 const name = document.createElement("strong");
                 name.textContent = service.name;
 
@@ -659,7 +918,7 @@
                 button.textContent = "＋ Add";
                 button.addEventListener("click", () => addResource(service.id));
 
-                row.append(details, button);
+                row.append(icon, details, button);
                 section.appendChild(row);
             });
 
@@ -678,7 +937,7 @@
                 `/architectures/${currentArchitectureId}/resources`,
                 {
                     method: "POST",
-                    body: JSON.stringify({ service_id: serviceId })
+                    body: JSON.stringify({service_id: serviceId})
                 }
             );
 
@@ -689,49 +948,819 @@
         }
     }
 
+    function renderInfrastructure() {
+        const summary = $("infrastructureSummary");
+        const region = $("infraRegion");
+        if (region) region.value = architectureRegion.textContent || "us-east-1";
+        const vpcSelects = [$("subnetVpc"), $("placementVpc")];
+        vpcSelects.forEach(select => {
+            if (!select) return;
+            select.replaceChildren(new Option("Select VPC...", ""));
+            currentVpcs.forEach(v => select.add(new Option(`${v.name} (${v.cidr_block})`, v.vpc_id)));
+        });
+        const resourceSelect = $("placementResource");
+        resourceSelect.replaceChildren(new Option("Select resource...", ""));
+        currentResources.forEach(r => resourceSelect.add(new Option(r.name, r.resource_id)));
+        renderPlacementSubnets();
+        summary.replaceChildren();
+        if (!currentVpcs.length) { summary.textContent = "No VPCs configured yet."; return; }
+        currentVpcs.forEach(v => {
+            const box = document.createElement("div"); box.className = "infra-vpc";
+            const heading = document.createElement("strong"); heading.textContent = `${v.name} · ${v.cidr_block}`; box.appendChild(heading);
+            (v.subnets || []).forEach(n => { const sub = document.createElement("div"); sub.className = `infra-subnet ${n.subnet_type}`; sub.textContent = `${n.name} · ${n.cidr_block} · ${n.subnet_type} · ${n.availability_zone ? `AZ ${n.availability_zone}` : "AZ not set"}`; box.appendChild(sub); });
+            summary.appendChild(box);
+        });
+    }
+    function updatePlacementSuggestion() {
+        const box = $("placementSuggestion");
+        if (!box) return;
+        const resources = currentResources || [];
+        const has = id => resources.some(r => String(r.service_id || "").toLowerCase() === id);
+        const placed = (id, minSubnets) => resources.some(r => {
+            if (String(r.service_id || "").toLowerCase() !== id) return false;
+            const ids = Array.isArray(r.subnet_ids) && r.subnet_ids.length ? r.subnet_ids : (r.subnet_id ? [r.subnet_id] : []);
+            return ids.length >= minSubnets;
+        });
+        const ec2s = resources.filter(r => String(r.service_id || "").toLowerCase() === "ec2");
+        const ec2Placed = ec2s.filter(r => r.subnet_id).length;
+
+        let msg = "All key resources are placed. Connect them, then Save Layout.";
+        if (!has("alb")) msg = "Next: add Load Balancing from the catalog, then place it into both public subnets (hold ⌘).";
+        else if (!placed("alb", 2)) msg = "Next: place Load Balancing into Public-Subnet-A and Public-Subnet-B (hold ⌘ to select both).";
+        else if (ec2s.length < 1) msg = "Next: add an Amazon EC2 from the catalog, then place it into Private-App-Subnet.";
+        else if (ec2Placed < 1) msg = "Next: place the first Amazon EC2 into Private-App-Subnet.";
+        else if (ec2s.length < 2) msg = "Next: add a second Amazon EC2, then place it into Private-App-Subnet-B.";
+        else if (ec2Placed < 2) msg = "Next: place the second Amazon EC2 into Private-App-Subnet-B.";
+        box.textContent = "Suggested next: " + msg.replace(/^Next: /, "");
+    }
+
+    function renderPlacementSubnets() {
+        const select = $("placementSubnet"), vpcId = $("placementVpc").value;
+        select.replaceChildren(new Option("No subnet / VPC-level", ""));
+        const vpc = currentVpcs.find(v => v.vpc_id === vpcId);
+        (vpc?.subnets || []).forEach(n => select.add(new Option(`${n.name} (${n.cidr_block})`, n.subnet_id)));
+    }
+    async function infrastructureAction(payload) {
+        if (!currentArchitectureId) throw new Error("Select an architecture first.");
+        await apiRequest(`/architectures/${currentArchitectureId}/infrastructure`, {method:"POST", body:JSON.stringify(payload)});
+        await loadArchitecture(currentArchitectureId);
+        updatePlacementSuggestion();
+        showMessage("Infrastructure placement saved.");
+    }
+    $("saveRegionButton").addEventListener("click", () => infrastructureAction({action:"region", region:$("infraRegion").value}).catch(e=>showMessage(e.message,true)));
+    $("createVpcButton").addEventListener("click", () => infrastructureAction({action:"vpc", name:$("vpcName").value, cidr_block:$("vpcCidr").value}).catch(e=>showMessage(e.message,true)));
+    $("createSubnetButton").addEventListener("click", () => infrastructureAction({action:"subnet", vpc_id:$("subnetVpc").value, name:$("subnetName").value, cidr_block:$("subnetCidr").value, subnet_type:$("subnetType").value, availability_zone:`${$("infraRegion").value}${$("subnetAz").value}`}).catch(e=>showMessage(e.message,true)));
+    $("placementVpc").addEventListener("change", renderPlacementSubnets);
+    $("placementResource").addEventListener("change", () => {
+        const resource = currentResources.find(r => r.resource_id === $("placementResource").value);
+        const isAlb = resource && String(resource.service_id || "").toLowerCase() === "alb";
+        const select = $("placementSubnet");
+        if (isAlb) select.setAttribute("multiple", "multiple");
+        else select.removeAttribute("multiple");
+    });
+    $("placeResourceButton").addEventListener("click", () => {
+        const resourceId = $("placementResource").value;
+        const resource = currentResources.find(r => r.resource_id === resourceId);
+        const isAlb = resource && String(resource.service_id || "").toLowerCase() === "alb";
+        const select = $("placementSubnet");
+        // Force single selection for everything except ALB
+        if (!isAlb) select.removeAttribute("multiple");
+        else select.setAttribute("multiple", "multiple");
+        const selected = Array.from(select.selectedOptions);
+        let subnetIds = selected.map(option => option.value).filter(Boolean);
+        let names = selected.map(option => option.textContent).filter(Boolean);
+        if (!isAlb && subnetIds.length > 1) {
+            // Safety: take only the last selected for non-ALB
+            subnetIds = [subnetIds[subnetIds.length - 1]];
+            names = [names[names.length - 1]];
+        }
+        if (!subnetIds.length) {
+            showMessage("Select a subnet first.", true);
+            return;
+        }
+        showMessage(`Placing ${resource ? resource.name : "resource"} into: ${names.join(", ")}`);
+        infrastructureAction({action:"placement", resource_id:resourceId, vpc_id:$("placementVpc").value, subnet_ids:subnetIds}).catch(e=>showMessage(e.message,true));
+    });
+
+    const moveBtn = $("moveEc2PrivateButton");
+    if (moveBtn) {
+        moveBtn.addEventListener("click", async () => {
+            alert("Move EC2 button clicked — looking up Private-App-Subnet...");
+            const ec2 = currentResources.find(r => String(r.service_id || "").toLowerCase() === "ec2");
+            if (!ec2) { alert("No EC2 resource found."); return; }
+            const vpc = currentVpcs.find(v => v.vpc_id === ec2.vpc_id) || currentVpcs[0];
+            if (!vpc) { alert("No VPC found."); return; }
+            const privateSub = (vpc.subnets || []).find(s =>
+                /private.?app/i.test(s.name) ||
+                (s.subnet_type === "private" && /app/i.test(s.name))
+            );
+            if (!privateSub) { alert("Private-App-Subnet not found."); return; }
+            try {
+                await infrastructureAction({
+                    action: "placement",
+                    resource_id: ec2.resource_id,
+                    vpc_id: vpc.vpc_id,
+                    subnet_ids: [privateSub.subnet_id]
+                });
+                alert("Placement request sent. Reload the design and check Private-App-Subnet.");
+            } catch (e) {
+                alert("Placement failed: " + e.message);
+            }
+        });
+    } else {
+        console.error("moveEc2PrivateButton not found in DOM");
+    }
+
     function renderCanvas() {
         architectureCanvas.replaceChildren();
 
-        if (currentResources.length === 0) {
-            const placeholder = document.createElement("div");
-            placeholder.className = "canvas-placeholder";
+        // The canvas is generated from the actual infrastructure model:
+        // Region -> VPC -> Availability Zone -> Subnet -> Resource.
+        const pad = 28;
+        const regionHeader = 58;
+        const azWidth = 680;
+        const azGap = 18;
+        const vpcGap = 28;
+        const subnetGap = 12;
+        const subnetTop = 38;
+        const cardWidth = 132;
+        const cardHeight = 88;
+        const cardGapX = 12;
+        const cardGapY = 10;
+        const make = (tag, cls, parent, text) => {
+            const el = document.createElement(tag);
+            el.className = cls;
+            if (text !== undefined && text !== null) el.textContent = text;
+            parent.appendChild(el);
+            return el;
+        };
+        const setBox = (el, x, y, w, h) => Object.assign(el.style, {
+            left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`
+        });
+        const iconTitle = (parent, cls, iconPath, alt, label) => {
+            const title = make('div', cls, parent);
+            const img = document.createElement('img');
+            img.src = iconPath;
+            img.alt = alt;
+            title.append(img, document.createTextNode(label));
+            return title;
+        };
+        const regionName = architectureRegion.textContent || 'us-east-1';
+        const placedIds = new Set();
+        const generatedPositions = {};
+        subnetBoxes = {}; // reset
+        multiAzAssociations = []; // reset
+        // Each resource may only live inside the boundary it is assigned to.
+        // x/y/w/h are absolute canvas pixels; `top` is where cards may start (below the title).
+        const containers = {};
+        const contain = (resource, x, y, w, h, titleInset) => {
+            containers[resource.resource_id] = { x, y, w, h, top: y + titleInset };
+        };
+        // Connection-aware ordering: resources are ranked by traffic-flow depth
+        // (entry points first, data stores last) so each lane reads left-to-right.
+        const flowDepth = (() => {
+            const ids = currentResources.map(r => r.resource_id);
+            const known = new Set(ids);
+            const out = {}, indeg = {}, depth = {};
+            ids.forEach(id => { out[id] = []; indeg[id] = 0; depth[id] = 0; });
+            currentConnections.forEach(c => {
+                if (!known.has(c.source_id) || !known.has(c.target_id) || c.source_id === c.target_id) return;
+                out[c.source_id].push(c.target_id); indeg[c.target_id]++;
+            });
+            const queue = ids.filter(id => indeg[id] === 0);
+            let guard = 0;
+            while (queue.length && guard++ < 5000) {
+                const id = queue.shift();
+                out[id].forEach(next => {
+                    depth[next] = Math.max(depth[next], depth[id] + 1);
+                    if (--indeg[next] === 0) queue.push(next);
+                });
+            }
+            return depth;
+        })();
+        const byFlow = (a, b) => (flowDepth[a.resource_id] - flowDepth[b.resource_id]);
+        // Regional/global services by AWS scope; VPC-capable resources that have no
+        // placement yet fall to the unassigned lane further down, never the regional lane.
+        const regional = currentResources.filter(isRegionalGlobal).sort(byFlow);
+        const regionalRows = Math.max(1, Math.ceil(regional.length / 4));
+        const regionalHeight = regional.length ? 44 + regionalRows * 100 : 0;
+        const region = make('section', 'aws-region-boundary', architectureCanvas);
+        iconTitle(region, 'aws-region-title', '/static/aws-icons/region.svg', 'AWS Region', `AWS Region · ${regionName}`);
 
-            const heading = document.createElement("h3");
-            heading.textContent = "Your architecture starts here";
-
-            const description = document.createElement("p");
-            description.textContent =
-                "Select AWS services from the catalog to begin building your design.";
-
-            placeholder.append(heading, description);
-            architectureCanvas.appendChild(placeholder);
-            return;
+        if (regional.length) {
+            const lane = make('section', 'aws-unplaced-boundary aws-regional-lane', region);
+            setBox(lane, 18, regionHeader - 4, 1420, regionalHeight);
+            make('div', 'aws-unplaced-title', lane, 'Regional and global services · outside the VPC');
+            regional.forEach((resource, i) => {
+                const x = pad + 38 + (i % 4) * (cardWidth + cardGapX);
+                const y = pad + regionHeader + 30 + Math.floor(i / 4) * (cardHeight + cardGapY);
+                generatedPositions[resource.resource_id] = { x, y };
+                contain(resource, pad + 18, pad + regionHeader - 4, 1420, regionalHeight, 36);
+                placedIds.add(resource.resource_id);
+            });
         }
 
+        let nextVpcY = regionHeader + (regional.length ? regionalHeight + 22 : 8);
+        let maxVpcRight = 1480;
+        currentVpcs.forEach(vpc => {
+            const subs = Array.isArray(vpc.subnets) ? vpc.subnets : [];
+            const vpcResources = currentResources.filter(r => r.vpc_id === vpc.vpc_id && !isRegionalGlobal(r)).sort(byFlow);
+            const azNames = [...new Set([
+                ...subs.map(s => s.availability_zone).filter(Boolean),
+                ...vpcResources.map(r => r.availability_zone).filter(Boolean)
+            ])].sort();
+            const azList = azNames.length ? azNames : [];
+            const columnCount = Math.max(1, azList.length);
+            const vpcWidth = 28 + columnCount * azWidth + (columnCount - 1) * azGap;
+            const vpcX = 18;
+            const vpcY = nextVpcY;
+            const vpcBox = make('section', 'aws-vpc-boundary', region);
+            iconTitle(vpcBox, 'aws-vpc-title', '/static/aws-icons/vpc-boundary.svg', 'VPC', `${vpc.name} · ${vpc.cidr_block}`);
+
+            const azData = azList.map(az => {
+                const azSubs = subs.filter(s => s.availability_zone === az).sort((a, b) => {
+                    const rank = s => s.subnet_type === 'public' ? 0 : /data|database/i.test(s.name || '') ? 2 : 1;
+                    return rank(a) - rank(b) || String(a.name).localeCompare(String(b.name));
+                });
+                // Multi-AZ resources (subnet_ids.length > 1) are drawn once at VPC level, not inside any single subnet.
+                const multiAzIds = new Set(vpcResources.filter(r => {
+                    const ids = Array.isArray(r.subnet_ids) && r.subnet_ids.length ? r.subnet_ids : (r.subnet_id ? [r.subnet_id] : []);
+                    return ids.length > 1;
+                }).map(r => r.resource_id));
+
+                const subnetData = azSubs.map(subnet => {
+                    const members = vpcResources.filter(r => {
+                        if (multiAzIds.has(r.resource_id)) return false;
+                        // Prefer the explicit primary subnet_id; fall back to first of subnet_ids
+                        const primary = r.subnet_id || (Array.isArray(r.subnet_ids) && r.subnet_ids[0]);
+                        return primary === subnet.subnet_id;
+                    });
+                    const rows = Math.max(1, Math.ceil(members.length / 4));
+                    return { subnet, members, height: Math.max(190, 70 + rows * (cardHeight + cardGapY)) };
+                });
+                const vpcLevel = vpcResources.filter(r => !r.subnet_id && r.availability_zone === az);
+                return { az, subnetData, vpcLevel };
+            });
+
+            const azContentHeights = azData.map(data =>
+                subnetTop + data.subnetData.reduce((sum, item) => sum + item.height + subnetGap, 0) +
+                (data.vpcLevel.length ? 58 + Math.ceil(data.vpcLevel.length / 4) * (cardHeight + cardGapY) : 0) + 22
+            );
+            const azHeight = Math.max(230, ...azContentHeights);
+            // Reserve space for multi-AZ lane BEFORE laying out AZ columns
+            const multiAzResourcesEarly = vpcResources.filter(r => {
+                const ids = Array.isArray(r.subnet_ids) && r.subnet_ids.length ? r.subnet_ids : (r.subnet_id ? [r.subnet_id] : []);
+                return ids.length > 1;
+            });
+            const multiAzOffset = multiAzResourcesEarly.length
+                ? (48 + Math.ceil(multiAzResourcesEarly.length / 4) * (cardHeight + cardGapY) + 16)
+                : 0;
+            let vpcHeight = azHeight + 78 + multiAzOffset;
+            setBox(vpcBox, vpcX, vpcY, vpcWidth, vpcHeight);
+
+            // Place multi-AZ lane at the top
+            if (multiAzResourcesEarly.length) {
+                const lane = make('section', 'aws-unplaced-boundary aws-multi-az-lane', vpcBox);
+                setBox(lane, 14, 50, vpcWidth - 28, multiAzOffset - 8);
+                make('div', 'aws-unplaced-title', lane, 'Multi-AZ resources · one logical resource, multiple subnet mappings');
+                multiAzResourcesEarly.forEach((resource, i) => {
+                    const ids = Array.isArray(resource.subnet_ids) && resource.subnet_ids.length
+                        ? resource.subnet_ids : (resource.subnet_id ? [resource.subnet_id] : []);
+                    const rowStart = Math.floor(i / 4) * 4;
+                    const itemsInRow = Math.min(4, multiAzResourcesEarly.length - rowStart);
+                    const rowWidth = itemsInRow * cardWidth + Math.max(0, itemsInRow - 1) * cardGapX;
+                    const centeredRowX = pad + vpcX + 14 + Math.max(0, (vpcWidth - 28 - rowWidth) / 2);
+                    generatedPositions[resource.resource_id] = {
+                        x: centeredRowX + (i % 4) * (cardWidth + cardGapX),
+                        y: pad + vpcY + 50 + 40 + Math.floor(i / 4) * (cardHeight + cardGapY)
+                    };
+                    contain(resource, pad + vpcX + 14, pad + vpcY + 50, vpcWidth - 28, multiAzOffset - 8, 36);
+                    placedIds.add(resource.resource_id);
+                    multiAzAssociations.push({ resource_id: resource.resource_id, subnet_ids: ids.slice() });
+                });
+            }
+
+            if (!azData.length) {
+                const lane = make('section', 'aws-unplaced-boundary aws-vpc-level-lane', vpcBox);
+                setBox(lane, 14, 58, vpcWidth - 28, Math.max(130, 44 + Math.ceil(vpcResources.length / 4) * 100));
+                make('div', 'aws-unplaced-title', lane, 'VPC resources · no Availability Zone or subnet assigned');
+                vpcResources.forEach((resource, i) => {
+                    generatedPositions[resource.resource_id] = {
+                        x: pad + vpcX + 34 + (i % 4) * (cardWidth + cardGapX),
+                        y: pad + vpcY + 98 + Math.floor(i / 4) * (cardHeight + cardGapY)
+                    };
+                    contain(resource, pad + vpcX + 14, pad + vpcY + 58, vpcWidth - 28,
+                        Math.max(130, 44 + Math.ceil(vpcResources.length / 4) * 100), 36);
+                    placedIds.add(resource.resource_id);
+                });
+            }
+
+            azData.forEach((data, ai) => {
+                const ax = 14 + ai * (azWidth + azGap);
+                const azBox = make('section', 'aws-az-column', vpcBox);
+                setBox(azBox, ax, 58 + multiAzOffset, azWidth, azHeight);
+                make('div', 'aws-az-title', azBox, `Availability Zone · ${data.az}`);
+                let sy = subnetTop;
+                data.subnetData.forEach(({ subnet, members, associations, height }) => {
+                    const type = subnet.subnet_type === 'public' ? 'public' : 'private';
+                    const subnetBox = make('section', `aws-subnet-boundary ${type}`, azBox);
+                    setBox(subnetBox, 10, sy, azWidth - 20, height);
+                    // Absolute canvas coordinates for association lines
+                    subnetBoxes[subnet.subnet_id] = {
+                        x: pad + vpcX + ax + 10,
+                        y: pad + vpcY + 58 + multiAzOffset + sy,
+                        w: azWidth - 20,
+                        h: height
+                    };
+                    iconTitle(subnetBox, 'aws-subnet-title',
+                        `/static/aws-icons/${type === 'public' ? 'public-subnet' : 'private-subnet'}.svg`,
+                        `${type} subnet`, `${subnet.name} · ${subnet.cidr_block}`);
+                    members.forEach((resource, i) => {
+                        const cols = Math.min(4, members.length);
+                        const rowWidth = cols * cardWidth + Math.max(0, cols - 1) * cardGapX;
+                        const startX = pad + vpcX + ax + 10 + Math.max(8, (azWidth - 20 - rowWidth) / 2);
+                        generatedPositions[resource.resource_id] = {
+                            x: startX + (i % 4) * (cardWidth + cardGapX),
+                            y: pad + vpcY + 58 + multiAzOffset + sy + 56 + Math.floor(i / 4) * (cardHeight + cardGapY)
+                        };
+                        contain(resource, pad + vpcX + ax + 10, pad + vpcY + 58 + multiAzOffset + sy, azWidth - 20, height, 48);
+                        placedIds.add(resource.resource_id);
+                    });
+
+                    sy += height + subnetGap;
+                });
+
+                if (data.vpcLevel.length) {
+                    const laneHeight = 48 + Math.ceil(data.vpcLevel.length / 4) * (cardHeight + cardGapY);
+                    const lane = make('section', 'aws-unplaced-boundary aws-vpc-level-lane', azBox);
+                    setBox(lane, 10, sy, azWidth - 20, laneHeight);
+                    make('div', 'aws-unplaced-title', lane, 'VPC-level resources · no subnet assigned');
+                    data.vpcLevel.forEach((resource, i) => {
+                        generatedPositions[resource.resource_id] = {
+                            x: pad + vpcX + ax + 24 + (i % 4) * (cardWidth + cardGapX),
+                            y: pad + vpcY + 58 + sy + 38 + Math.floor(i / 4) * (cardHeight + cardGapY)
+                        };
+                        contain(resource, pad + vpcX + ax + 10, pad + vpcY + 58 + sy, azWidth - 20, laneHeight, 34);
+                        placedIds.add(resource.resource_id);
+                    });
+                }
+            });
+
+            // A resource with a VPC assignment but an invalid/missing subnet or AZ stays visible.
+            const unrepresented = vpcResources.filter(r => !placedIds.has(r.resource_id));
+            if (unrepresented.length) {
+                const laneY = 58 + multiAzOffset + azHeight + 10;
+                const lane = make('section', 'aws-unplaced-boundary', vpcBox);
+                setBox(lane, 14, laneY, vpcWidth - 28, 48 + Math.ceil(unrepresented.length / 4) * 100);
+                make('div', 'aws-unplaced-title', lane, 'Unassigned resources · review their VPC, AZ, and subnet placement');
+                unrepresented.forEach((resource, i) => {
+                    generatedPositions[resource.resource_id] = {
+                        x: pad + vpcX + 34 + (i % 4) * (cardWidth + cardGapX),
+                        y: pad + vpcY + laneY + 38 + Math.floor(i / 4) * 100
+                    };
+                    contain(resource, pad + vpcX + 14, pad + vpcY + laneY, vpcWidth - 28,
+                        48 + Math.ceil(unrepresented.length / 4) * 100, 34);
+                    placedIds.add(resource.resource_id);
+                });
+            }
+
+            nextVpcY += vpcHeight + vpcGap;
+            maxVpcRight = Math.max(maxVpcRight, vpcX + vpcWidth + 40);
+        });
+
+        const remaining = currentResources.filter(r => !placedIds.has(r.resource_id));
+        let trailingHeight = 0;
+        if (remaining.length) {
+            const rows = Math.ceil(remaining.length / 4);
+            const laneY = nextVpcY;
+            const lane = make('section', 'aws-unplaced-boundary', region);
+            trailingHeight = 48 + rows * 100;
+            setBox(lane, 18, laneY, Math.max(1420, maxVpcRight - 36), trailingHeight);
+            make('div', 'aws-unplaced-title', lane, 'Unassigned resources · assign a VPC and subnet when appropriate');
+            remaining.forEach((resource, i) => {
+                generatedPositions[resource.resource_id] = {
+                    x: pad + 38 + (i % 4) * (cardWidth + cardGapX),
+                    y: pad + laneY + 38 + Math.floor(i / 4) * 100
+                };
+                contain(resource, pad + 18, pad + laneY, Math.max(1420, maxVpcRight - 36), trailingHeight, 34);
+            });
+        }
+
+        // Final pass: left-align cards that have no saved position.
+        // Auto Layout should line S3, EC2, etc. up on the left, not center them.
         currentResources.forEach(resource => {
-            const card = document.createElement("article");
-            card.className = "architecture-resource-card";
+            if (currentPositions[resource.resource_id]) return; // keep user-saved
+            const box = containers[resource.resource_id];
+            if (!box) return;
+            const isMultiAz = (Array.isArray(resource.subnet_ids) && resource.subnet_ids.length > 1);
+            const leftAligned = {
+                x: isMultiAz
+                    ? box.x + Math.max(8, (box.w - cardWidth) / 2)  // ALB stays centered in its lane
+                    : box.x + 12,                                   // everything else left-aligned
+                y: box.top + 8
+            };
+            generatedPositions[resource.resource_id] = leftAligned;
+        });
 
-            const type = document.createElement("div");
-            type.className = "resource-type";
-            type.textContent = resource.service_id;
-
-            const name = document.createElement("h3");
-            name.textContent = resource.name;
-
-            const id = document.createElement("div");
-            id.className = "resource-id";
-            id.textContent = `Resource ID: ${resource.resource_id}`;
-
-            card.append(type, name, id);
+        resourceContainers = containers;
+        currentResources.forEach(resource => {
+            const card = document.createElement('article');
+            card.className = 'architecture-resource-card aws-service-node';
+            card.dataset.resourceId = resource.resource_id;
+            card.style.setProperty('--service-accent', serviceAccent(resource.service_id));
+            card.style.setProperty('--service-tint', serviceTint(resource.service_id));
+            const generated = generatedPositions[resource.resource_id] || { x: pad + 36, y: pad + 90 };
+            const saved = currentPositions[resource.resource_id];
+            // Keep a saved (dragged) position only if the card still sits fully inside the
+            // boundary it is assigned to; otherwise snap back to the generated slot.
+            const box = containers[resource.resource_id];
+            // A saved (dragged) position is honoured when it is close to the assigned boundary
+            // (the small margin tolerates layout shifts), but it is always CLAMPED fully inside
+            // that boundary so a card can never cover a title or spill outside its subnet/lane.
+            const nearBox = p => !box || (
+                p.x >= box.x - 40 && p.x + cardWidth <= box.x + box.w + 40 &&
+                p.y >= box.top - 40 && p.y + cardHeight <= box.y + box.h + 40
+            );
+            let position = saved && Number.isFinite(Number(saved.x)) && Number.isFinite(Number(saved.y)) && nearBox(saved)
+                ? { x: Number(saved.x), y: Number(saved.y) } : generated;
+            if (box) {
+                position = {
+                    x: Math.max(box.x + 4, Math.min(box.x + box.w - cardWidth - 4, position.x)),
+                    y: Math.max(box.top, Math.min(box.y + box.h - cardHeight - 4, position.y))
+                };
+            }
+            currentPositions[resource.resource_id] = { x: position.x, y: position.y };
+            card.style.left = `${position.x}px`;
+            card.style.top = `${position.y}px`;
+            const frame = document.createElement('div'); frame.className = 'aws-icon-frame';
+            const icon = document.createElement('img'); icon.src = serviceIconPath(resource.service_id);
+            icon.alt = `${resource.name} AWS service icon`; frame.appendChild(icon);
+            const copy = document.createElement('div'); copy.className = 'aws-node-copy';
+            const type = document.createElement('div'); type.className = 'resource-type'; type.textContent = resource.service_id.toUpperCase();
+            const name = document.createElement('h3'); name.textContent = resource.name;
+            copy.append(type, name);
+            const ids = Array.isArray(resource.subnet_ids) && resource.subnet_ids.length ? resource.subnet_ids : (resource.subnet_id ? [resource.subnet_id] : []);
+            if (ids.length > 1) {
+                const badge = document.createElement('div');
+                badge.className = 'resource-id';
+                badge.style.display = 'block';
+                badge.style.fontSize = '8px';
+                badge.style.color = '#c2410c';
+                badge.style.marginTop = '1px';
+                badge.textContent = `multi-AZ · ${ids.length} subnets`;
+                copy.append(badge);
+                card.title = `${resource.name} — one logical resource mapped to ${ids.length} subnets`;
+            }
+            card.append(frame, copy);
+            card.addEventListener('pointerdown', startDrag);
             architectureCanvas.appendChild(card);
         });
+
+        const contentHeight = nextVpcY + trailingHeight + 70;
+        const canvasWidth = Math.max(1580, maxVpcRight + pad + 20);
+        const canvasHeight = Math.max(760, contentHeight + pad);
+        setBox(region, pad, pad, canvasWidth - 48, canvasHeight - pad);
+        architectureCanvas.style.width = `${canvasWidth}px`;
+        architectureCanvas.style.height = `${canvasHeight}px`;
+        architectureCanvas.style.minHeight = `${canvasHeight}px`;
+        scheduleConnectionRedraw();
+    }
+
+    function startDrag(event) {
+        if (event.button !== 0) return;
+
+        const card = event.currentTarget;
+        const resourceId = card.dataset.resourceId;
+        const position = currentPositions[resourceId];
+
+        if (!position) return;
+
+        event.preventDefault();
+
+        dragState = {
+            card,
+            resourceId,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            originalX: position.x,
+            originalY: position.y,
+            moved: false
+        };
+
+        card.classList.add("dragging");
+        card.setPointerCapture(event.pointerId);
+
+        card.addEventListener("pointermove", moveDrag);
+        card.addEventListener("pointerup", endDrag);
+        card.addEventListener("pointercancel", endDrag);
+    }
+
+    function moveDrag(event) {
+        if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+        // Pointer deltas are viewport pixels; card positions are unscaled canvas pixels.
+        const deltaX = (event.clientX - dragState.startX) / diagramZoom;
+        const deltaY = (event.clientY - dragState.startY) / diagramZoom;
+
+        const maxX = Math.max(
+            0,
+            architectureCanvas.scrollWidth - dragState.card.offsetWidth - 10
+        );
+
+        const maxY = Math.max(
+            0,
+            architectureCanvas.scrollHeight - dragState.card.offsetHeight - 10
+        );
+
+        let x = Math.max(0, Math.min(maxX, dragState.originalX + deltaX));
+        let y = Math.max(0, Math.min(maxY, dragState.originalY + deltaY));
+
+        // Keep the card inside its assigned Region / VPC / AZ / subnet boundary.
+        const box = resourceContainers[dragState.resourceId];
+        if (box) {
+            const w = dragState.card.offsetWidth, h = dragState.card.offsetHeight;
+            x = Math.max(box.x + 4, Math.min(box.x + box.w - w - 4, x));
+            y = Math.max(box.top, Math.min(box.y + box.h - h - 4, y));
+        }
+
+        dragState.card.style.left = `${x}px`;
+        dragState.card.style.top = `${y}px`;
+
+        currentPositions[dragState.resourceId] = {x, y};
+        dragState.moved = true;
+
+        scheduleConnectionRedraw();
+    }
+
+    async function endDrag(event) {
+        if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+        const card = dragState.card;
+        const moved = dragState.moved;
+
+        card.classList.remove("dragging");
+        card.removeEventListener("pointermove", moveDrag);
+        card.removeEventListener("pointerup", endDrag);
+        card.removeEventListener("pointercancel", endDrag);
+
+        dragState = null;
+
+        if (moved) {
+            schedulePositionSave();
+        }
+    }
+
+    function schedulePositionSave() {
+        pendingSave = true;
+        clearTimeout(saveTimer);
+
+        showMessage("Position changed. Saving...");
+
+        saveTimer = setTimeout(savePositions, 450);
+    }
+
+    async function savePositions() {
+        if (!currentArchitectureId || !pendingSave) return;
+
+        pendingSave = false;
+
+        const architectureId = currentArchitectureId;
+        const positionsToSave = JSON.parse(JSON.stringify(currentPositions));
+
+        try {
+            await apiRequest(
+                `/architectures/${architectureId}/positions`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({positions: positionsToSave})
+                }
+            );
+
+            if (architectureId === currentArchitectureId) {
+                showMessage("Architecture layout saved.");
+            }
+        } catch (error) {
+            pendingSave = true;
+            showMessage(`Could not save layout: ${error.message}`, true);
+        }
+    }
+
+    async function savePositionsImmediately() {
+        if (!currentArchitectureId) return;
+        clearTimeout(saveTimer);
+        pendingSave = false;
+        await apiRequest(`/architectures/${currentArchitectureId}/positions`, {
+            method: "POST",
+            body: JSON.stringify({positions: JSON.parse(JSON.stringify(currentPositions))})
+        });
+    }
+
+    // Draw connectors in the canvas's unscaled CSS coordinate system.
+    // The canvas itself is CSS-transformed for zoom, so viewport measurements
+    // MUST be divided by diagramZoom before being written into the child SVG.
+    function drawArchitectureConnections() {
+        const previous = architectureCanvas.querySelector(".architecture-connections-svg");
+        if (previous) previous.remove();
+        if (!currentResources.length && !multiAzAssociations.length) return;
+
+        const zoom = diagramZoom || 1;
+        const width = Math.max(architectureCanvas.scrollWidth, architectureCanvas.clientWidth);
+        const height = Math.max(architectureCanvas.scrollHeight, architectureCanvas.clientHeight);
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.classList.add("architecture-connections-svg");
+        svg.setAttribute("width", width);
+        svg.setAttribute("height", height);
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        svg.setAttribute("aria-hidden", "true");
+
+        const defs = document.createElementNS(svgNS, "defs");
+        const marker = document.createElementNS(svgNS, "marker");
+        marker.setAttribute("id", "architectureArrow");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "8");
+        marker.setAttribute("viewBox", "0 0 8 8");
+        marker.setAttribute("refX", "7");
+        marker.setAttribute("refY", "4");
+        marker.setAttribute("orient", "auto");
+        marker.setAttribute("markerUnits", "userSpaceOnUse");
+        const arrow = document.createElementNS(svgNS, "path");
+        arrow.setAttribute("d", "M 0 0 L 8 4 L 0 8 Z");
+        arrow.setAttribute("fill", "#557f96");
+        marker.appendChild(arrow);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        const canvasRect = architectureCanvas.getBoundingClientRect();
+        const cardRects = new Map();
+
+        architectureCanvas.querySelectorAll(".architecture-resource-card[data-resource-id]").forEach(card => {
+            const r = card.getBoundingClientRect();
+            cardRects.set(card.dataset.resourceId, {
+                left: (r.left - canvasRect.left) / zoom + architectureCanvas.scrollLeft,
+                top: (r.top - canvasRect.top) / zoom + architectureCanvas.scrollTop,
+                width: r.width / zoom,
+                height: r.height / zoom
+            });
+        });
+
+        const pointOnEdge = (r, side) => {
+            if (side === "left") return {x:r.left, y:r.top+r.height/2};
+            if (side === "right") return {x:r.left+r.width, y:r.top+r.height/2};
+            if (side === "top") return {x:r.left+r.width/2, y:r.top};
+            return {x:r.left+r.width/2, y:r.top+r.height};
+        };
+
+        // Route around other service cards using an orthogonal visibility grid.
+        // Candidate grid lines come from endpoints and the edges of inflated obstacles.
+        const obstacles = [...cardRects.entries()].map(([id, r]) => ({
+            id, left:r.left-14, right:r.left+r.width+14,
+            top:r.top-14, bottom:r.top+r.height+14
+        }));
+        const insideObstacle = (x, y, ignored) => obstacles.some(o =>
+            o.id !== ignored && x > o.left && x < o.right && y > o.top && y < o.bottom
+        );
+        const clearSegment = (a, b, ignored) => {
+            const steps = Math.max(2, Math.ceil((Math.abs(b.x-a.x)+Math.abs(b.y-a.y))/8));
+            for (let i=1; i<steps; i++) {
+                const t=i/steps;
+                if (insideObstacle(a.x+(b.x-a.x)*t, a.y+(b.y-a.y)*t, ignored)) return false;
+            }
+            return true;
+        };
+        const orthogonalRoute = (start, finish, sourceId, targetId) => {
+            const pad=24;
+            const xs=[start.x, finish.x];
+            const ys=[start.y, finish.y];
+            obstacles.forEach(o=>{
+                if (o.id===sourceId || o.id===targetId) return;
+                xs.push(o.left-pad,o.right+pad);
+                ys.push(o.top-pad,o.bottom+pad);
+            });
+            const uniq=a=>[...new Set(a.map(v=>Math.round(v*10)/10))].sort((a,b)=>a-b);
+            const X=uniq(xs), Y=uniq(ys), nodes=[];
+            const key=(x,y)=>`${x},${y}`;
+            const map=new Map();
+            Y.forEach(y=>X.forEach(x=>{
+                if (!insideObstacle(x,y,sourceId) && !insideObstacle(x,y,targetId)) {
+                    const n={x,y,id:nodes.length}; nodes.push(n); map.set(key(x,y),n);
+                }
+            }));
+            const startNode=map.get(key(Math.round(start.x*10)/10,Math.round(start.y*10)/10));
+            const endNode=map.get(key(Math.round(finish.x*10)/10,Math.round(finish.y*10)/10));
+            if (!startNode || !endNode) return null;
+            const adj=new Map(nodes.map(n=>[n.id,[]]));
+            const add=(a,b)=>{ if(clearSegment(a,b,sourceId) && clearSegment(a,b,targetId)) {
+                const d=Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+                adj.get(a.id).push({to:b.id,d,dir:a.x===b.x?'v':'h'});
+                adj.get(b.id).push({to:a.id,d,dir:a.x===b.x?'v':'h'});
+            }};
+            Y.forEach(y=>{ const row=X.map(x=>map.get(key(x,y))).filter(Boolean); for(let i=1;i<row.length;i++) add(row[i-1],row[i]); });
+            X.forEach(x=>{ const col=Y.map(y=>map.get(key(x,y))).filter(Boolean); for(let i=1;i<col.length;i++) add(col[i-1],col[i]); });
+            // Dijkstra with a small bend penalty to favor clean, low-bend paths.
+            const states=new Map(), prev=new Map(), queue=[];
+            const sk=(id,dir)=>`${id}|${dir}`;
+            const initial={id:startNode.id,dir:'n',cost:0}; queue.push(initial); states.set(sk(initial.id,'n'),0);
+            let best=null;
+            while(queue.length){
+                queue.sort((a,b)=>b.cost-a.cost); const cur=queue.pop();
+                if(cur.cost!==states.get(sk(cur.id,cur.dir))) continue;
+                if(cur.id===endNode.id){best=cur;break;}
+                for(const edge of adj.get(cur.id)){
+                    const cost=cur.cost+edge.d+(cur.dir!=='n'&&cur.dir!==edge.dir?34:0);
+                    const k=sk(edge.to,edge.dir);
+                    if(cost<(states.get(k)??Infinity)){
+                        states.set(k,cost); prev.set(k,sk(cur.id,cur.dir));
+                        queue.push({id:edge.to,dir:edge.dir,cost});
+                    }
+                }
+            }
+            if(!best) return null;
+            const points=[]; let k=sk(best.id,best.dir);
+            while(k){ const [id]=k.split('|'); points.push(nodes[Number(id)]); k=prev.get(k); }
+            points.reverse();
+            // Remove collinear intermediate points.
+            return points.filter((pt,i,a)=>i===0||i===a.length-1||
+                !((a[i-1].x===pt.x&&pt.x===a[i+1].x)||(a[i-1].y===pt.y&&pt.y===a[i+1].y)));
+        };
+        const connectionStyle = connection => {
+            const words = `${connection.description||''} ${connection.connection_type||''}`.toLowerCase();
+            if (/encrypt|kms|key|security|waf|firewall|iam|policy/.test(words)) return {color:'#8b5fbf',dash:'7 5',width:2.2,kind:'Security / identity'};
+            if (/monitor|metric|telemetry|log|trail|audit|alarm/.test(words)) return {color:'#c58a2c',dash:'3 5',width:2.2,kind:'Monitoring / audit'};
+            if (/backup|recover|snapshot|replica/.test(words)) return {color:'#26978b',dash:'9 4',width:2.2,kind:'Backup / recovery'};
+            return {color:'#557f96',dash:'',width:2.8,kind:'Application / data flow'};
+        };
+        currentConnections.forEach((connection, index) => {
+            const source = cardRects.get(connection.source_id);
+            const target = cardRects.get(connection.target_id);
+            if (!source || !target) return;
+
+            const sx = source.left + source.width/2;
+            const sy = source.top + source.height/2;
+            const tx = target.left + target.width/2;
+            const ty = target.top + target.height/2;
+            const dx=tx-sx, dy=ty-sy;
+            const horizontal=Math.abs(dx)>=Math.abs(dy);
+            const start=pointOnEdge(source,horizontal?(dx>=0?'right':'left'):(dy>=0?'bottom':'top'));
+            const finish=pointOnEdge(target,horizontal?(dx>=0?'left':'right'):(dy>=0?'top':'bottom'));
+            const route=orthogonalRoute(start,finish,connection.source_id,connection.target_id);
+            const points=route && route.length>1 ? route : [start,{x:(start.x+finish.x)/2,y:start.y},{x:(start.x+finish.x)/2,y:finish.y},finish];
+            const pathData=points.map((pt,i)=>`${i?'L':'M'} ${pt.x} ${pt.y}`).join(' ');
+            const style=connectionStyle(connection);
+
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", pathData);
+            path.setAttribute("stroke", style.color);
+            path.setAttribute("stroke-width", style.width);
+            if (style.dash) path.setAttribute("stroke-dasharray", style.dash);
+            path.setAttribute("data-relationship-type", style.kind);
+            path.setAttribute("marker-end", "url(#architectureArrow)");
+            path.setAttribute("data-connection-id", connection.connection_id || `connection-${index}`);
+            if (connection.description) {
+                const title = document.createElementNS(svgNS, "title");
+                title.textContent = connection.description;
+                path.appendChild(title);
+            }
+            svg.appendChild(path);
+        });
+
+        // Multi-AZ association lines: one centered logical resource → every associated subnet/AZ
+        multiAzAssociations.forEach(assoc => {
+            const source = cardRects.get(assoc.resource_id);
+            if (!source) return;
+            const sx = source.left + source.width / 2;
+            const sy = source.top + source.height;
+            (assoc.subnet_ids || []).forEach(sid => {
+                const box = subnetBoxes[sid];
+                if (!box) return;
+                const tx = box.x + box.w / 2;
+                const ty = box.y;
+                const path = document.createElementNS(svgNS, "path");
+                path.setAttribute("d", `M ${sx} ${sy} L ${sx} ${sy + 12} L ${tx} ${sy + 12} L ${tx} ${ty}`);
+                path.setAttribute("stroke", "#c2410c");
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("stroke-dasharray", "6 4");
+                path.setAttribute("fill", "none");
+                path.setAttribute("marker-end", "url(#architectureArrow)");
+                const title = document.createElementNS(svgNS, "title");
+                title.textContent = "ALB subnet mapping (same resource)";
+                path.appendChild(title);
+                svg.appendChild(path);
+            });
+        });
+
+        architectureCanvas.prepend(svg);
+    }
+
+    function scheduleConnectionRedraw() {
+        requestAnimationFrame(drawArchitectureConnections);
     }
 
     function renderResourceList() {
         resourceList.replaceChildren();
 
-        if (currentResources.length === 0) {
+        if (!currentResources.length) {
             const message = document.createElement("p");
             message.className = "muted";
             message.textContent = "No resources added yet.";
@@ -747,16 +1776,177 @@
             name.textContent = `${index + 1}. ${resource.name}`;
 
             const service = document.createElement("small");
-            service.textContent = resource.service_id;
+            const ids = Array.isArray(resource.subnet_ids) && resource.subnet_ids.length ? resource.subnet_ids : (resource.subnet_id ? [resource.subnet_id] : []);
+            let subnetLabel = "";
+            if (ids.length) {
+                const vpc = currentVpcs.find(v => v.vpc_id === resource.vpc_id);
+                const names = ids.map(sid => {
+                    const sn = vpc?.subnets?.find(s => s.subnet_id === sid);
+                    return sn ? sn.name : sid.slice(0, 8);
+                });
+                subnetLabel = ids.length > 1
+                    ? ` · multi-AZ (${names.join(", ")})`
+                    : ` · ${names[0]}`;
+            }
+            service.textContent = `${resource.service_id}${subnetLabel}`;
 
-            row.append(name, service);
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "button secondary";
+            removeBtn.textContent = "Remove";
+            removeBtn.style.marginLeft = "auto";
+            removeBtn.style.padding = "4px 10px";
+            removeBtn.style.fontSize = "11px";
+            removeBtn.addEventListener("click", async () => {
+                if (!window.confirm(`Remove ${resource.name}?\n\nThis also removes its connections. This cannot be undone.`)) return;
+                try {
+                    await apiRequest(`/architectures/${currentArchitectureId}/resources/${resource.resource_id}`, { method: "DELETE" });
+                    showMessage(`${resource.name} removed.`);
+                    await loadArchitecture(currentArchitectureId);
+                } catch (error) {
+                    showMessage(error.message, true);
+                }
+            });
+
+            row.style.display = "flex";
+            row.style.alignItems = "center";
+            row.style.gap = "10px";
+            row.append(name, service, removeBtn);
             resourceList.appendChild(row);
         });
+    }
+
+    function renderConnectionControls() {
+        [connectionSource, connectionTarget].forEach(select => {
+            select.replaceChildren();
+
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Select resource...";
+            select.appendChild(option);
+
+            currentResources.forEach(resource => {
+                const resourceOption = document.createElement("option");
+                resourceOption.value = resource.resource_id;
+                resourceOption.textContent = resource.name;
+                select.appendChild(resourceOption);
+            });
+        });
+
+        const canConnect = currentResources.length >= 2;
+        connectionSource.disabled = !canConnect;
+        connectionTarget.disabled = !canConnect;
+        $("addConnectionButton").disabled = !canConnect;
+    }
+
+    function renderConnectionList() {
+        connectionList.replaceChildren();
+
+        if (!currentConnections.length) {
+            const message = document.createElement("p");
+            message.className = "muted";
+            message.textContent = "No connections created yet.";
+            connectionList.appendChild(message);
+            return;
+        }
+
+        currentConnections.forEach(connection => {
+            const source = currentResources.find(
+                resource => resource.resource_id === connection.source_id
+            );
+
+            const target = currentResources.find(
+                resource => resource.resource_id === connection.target_id
+            );
+
+            const item = document.createElement("div");
+            item.className = "connection-item";
+
+            const relationship = document.createElement("strong");
+            relationship.textContent =
+                `${source ? source.name : "Unknown"} → ${target ? target.name : "Unknown"}`;
+
+            const description = document.createElement("small");
+            description.textContent =
+                connection.description || connection.connection_type;
+
+            const actions = document.createElement("div");
+            actions.className = "connection-actions";
+            const editButton = document.createElement("button");
+            editButton.type = "button"; editButton.className = "button secondary"; editButton.textContent = "Edit";
+            editButton.addEventListener("click", async () => {
+                const revised = window.prompt("Edit connection description:", connection.description || "");
+                if (revised === null) return;
+                try {
+                    await apiRequest(`/architectures/${currentArchitectureId}/connections/${connection.connection_id}`, {
+                        method: "PATCH", body: JSON.stringify({description: revised})
+                    });
+                    await loadArchitecture(currentArchitectureId);
+                    showMessage("Connection description updated.");
+                } catch (error) { showMessage(error.message, true); }
+            });
+            const removeButton = document.createElement("button");
+            removeButton.type = "button"; removeButton.className = "button secondary"; removeButton.textContent = "Remove";
+            removeButton.addEventListener("click", async () => {
+                if (!window.confirm(`Remove connection ${relationship.textContent}?`)) return;
+                try {
+                    await apiRequest(`/architectures/${currentArchitectureId}/connections/${connection.connection_id}`, {method:"DELETE"});
+                    await loadArchitecture(currentArchitectureId);
+                    showMessage("Connection removed.");
+                } catch (error) { showMessage(error.message, true); }
+            });
+            actions.append(editButton, removeButton);
+            item.append(relationship, description, actions);
+            connectionList.appendChild(item);
+        });
+    }
+
+    async function addConnection() {
+        if (!currentArchitectureId) {
+            showMessage("Select an architecture first.", true);
+            return;
+        }
+
+        const sourceId = connectionSource.value;
+        const targetId = connectionTarget.value;
+
+        if (!sourceId || !targetId) {
+            showMessage("Select both a source and destination resource.", true);
+            return;
+        }
+
+        if (sourceId === targetId) {
+            showMessage("A resource cannot connect to itself.", true);
+            return;
+        }
+
+        try {
+            await apiRequest(
+                `/architectures/${currentArchitectureId}/connections`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        source_id: sourceId,
+                        target_id: targetId,
+                        connection_type: "network",
+                        description: connectionDescription.value.trim()
+                    })
+                }
+            );
+
+            connectionDescription.value = "";
+            await loadArchitecture(currentArchitectureId);
+            showMessage("Connection saved successfully.");
+        } catch (error) {
+            showMessage(error.message, true);
+        }
     }
 
     function renderEmptyArchitecture() {
         currentArchitectureId = null;
         currentResources = [];
+        currentConnections = [];
+        currentPositions = {};
 
         architectureName.textContent = "No architecture selected";
         architectureDescription.textContent =
@@ -767,28 +1957,30 @@
 
         renderCanvas();
         renderResourceList();
+        renderConnectionControls();
+        renderConnectionList();
     }
 
-    document.getElementById("newArchitectureButton").addEventListener("click", () => {
+    $("newArchitectureButton").addEventListener("click", () => {
         dialog.hidden = false;
-        document.getElementById("newArchitectureName").focus();
+        $("newArchitectureName").focus();
     });
 
-    document.getElementById("cancelNewArchitecture").addEventListener("click", () => {
+    $("cancelNewArchitecture").addEventListener("click", () => {
         dialog.hidden = true;
     });
 
     newArchitectureForm.addEventListener("submit", async event => {
         event.preventDefault();
 
-        const name = document.getElementById("newArchitectureName").value.trim();
-        const description = document.getElementById("newArchitectureDescription").value.trim();
-        const region = document.getElementById("newArchitectureRegion").value;
+        const name = $("newArchitectureName").value.trim();
+        const description = $("newArchitectureDescription").value.trim();
+        const region = $("newArchitectureRegion").value;
 
         try {
             const created = await apiRequest("/architectures", {
                 method: "POST",
-                body: JSON.stringify({ name, description, region })
+                body: JSON.stringify({name, description, region})
             });
 
             dialog.hidden = true;
@@ -801,23 +1993,186 @@
         }
     });
 
-    architectureSelect.addEventListener("change", () => {
+    architectureSelect.addEventListener("change", async () => {
+        deleteArchitectureButton.disabled = !architectureSelect.value;
+        editArchitectureButton.disabled = !architectureSelect.value;
+        if (pendingSave) {
+            clearTimeout(saveTimer);
+            await savePositions();
+        }
+
         if (architectureSelect.value) {
-            loadArchitecture(architectureSelect.value);
+            await loadArchitecture(architectureSelect.value);
         } else {
             renderEmptyArchitecture();
         }
     });
 
+    deleteArchitectureButton.addEventListener("click", async () => {
+        const architectureId = architectureSelect.value;
+        if (!architectureId) {
+            showMessage("Select an architecture before deleting.", true);
+            return;
+        }
+
+        const architectureTitle = architectureSelect.selectedOptions[0]?.textContent || "this architecture";
+        const confirmed = window.confirm(
+            `Permanently delete "${architectureTitle}"?\n\nThis removes only this saved architecture design. Simulator training history is not affected. This action cannot be undone.`
+        );
+        if (!confirmed) return;
+
+        deleteArchitectureButton.disabled = true;
+        try {
+            if (pendingSave) {
+                clearTimeout(saveTimer);
+                pendingSave = false;
+            }
+            await apiRequest(`/architectures/${architectureId}`, { method: "DELETE" });
+            currentArchitectureId = null;
+            await loadArchitectureList();
+            showMessage(`Deleted "${architectureTitle}".`);
+        } catch (error) {
+            deleteArchitectureButton.disabled = !architectureSelect.value;
+            editArchitectureButton.disabled = !architectureSelect.value;
+            showMessage(error.message, true);
+        }
+    });
+
+    const editDialog = $("editArchitectureDialog");
+    const editForm = $("editArchitectureForm");
+    editArchitectureButton.addEventListener("click", async () => {
+        if (!currentArchitectureId) return;
+        try {
+            const design = await apiRequest(`/architectures/${currentArchitectureId}`);
+            $("editArchitectureName").value = design.name || "";
+            $("editArchitectureDescription").value = design.description || "";
+            $("editArchitectureProvider").value = design.cloud_provider || "AWS";
+            $("editArchitectureRegion").value = design.region || "us-east-1";
+            editDialog.hidden = false;
+            $("editArchitectureName").focus();
+        } catch (error) { showMessage(error.message, true); }
+    });
+    $("cancelEditArchitecture").addEventListener("click", () => { editDialog.hidden = true; });
+    editForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!currentArchitectureId) return;
+        try {
+            const result = await apiRequest(`/architectures/${currentArchitectureId}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    name: $("editArchitectureName").value.trim(),
+                    description: $("editArchitectureDescription").value.trim(),
+                    cloud_provider: $("editArchitectureProvider").value,
+                    region: $("editArchitectureRegion").value
+                })
+            });
+            editDialog.hidden = true;
+            await loadArchitectureList(currentArchitectureId);
+            showMessage(result.message || "Architecture settings saved.");
+        } catch (error) { showMessage(error.message, true); }
+    });
+
     serviceSearch.addEventListener("input", renderServiceCatalog);
 
-    document.getElementById("reloadButton").addEventListener("click", async () => {
+    $("addConnectionButton").addEventListener("click", addConnection);
+
+    $("loadDemoScenarioButton").addEventListener("click", async () => {
+        const button = $("loadDemoScenarioButton");
+        button.disabled = true;
+        button.textContent = "Creating scenario...";
+        try {
+            const created = await apiRequest("/demo-scenario", {method: "POST", body: JSON.stringify({})});
+            await loadArchitectureList(created.architecture_id);
+            showMessage("Guided clinic scenario loaded. Explore the infrastructure and test the saved design.");
+        } catch (error) {
+            showMessage(error.message, true);
+        } finally {
+            button.disabled = false;
+            button.textContent = "Load Guided Clinic Scenario";
+        }
+    });
+
+    $("reloadButton").addEventListener("click", async () => {
+        if (pendingSave) {
+            clearTimeout(saveTimer);
+            await savePositions();
+        }
+
         if (currentArchitectureId) {
             await loadArchitecture(currentArchitectureId);
         } else {
             await loadArchitectureList();
         }
     });
+
+    architectureCanvas.addEventListener("scroll", scheduleConnectionRedraw);
+
+    window.addEventListener("resize", scheduleConnectionRedraw);
+
+    const canvasResizeObserver = new ResizeObserver(() => {
+        scheduleConnectionRedraw();
+    });
+
+    canvasResizeObserver.observe(architectureCanvas);
+
+
+    function applyDiagramZoom(){
+        architectureCanvas.style.transform=`scale(${diagramZoom})`;
+        architectureCanvas.style.transformOrigin="top left";
+        $("zoomLevel").textContent=`${Math.round(diagramZoom*100)}%`;
+        scheduleConnectionRedraw();
+    }
+    function fitDiagramToScreen(){
+        const panel=$("architectureCanvas").parentElement;
+        const availableW=Math.max(320,panel.clientWidth-36);
+        const availableH=Math.max(320,window.innerHeight-250);
+        const contentW=architectureCanvas.scrollWidth||architectureCanvas.offsetWidth;
+        const contentH=architectureCanvas.scrollHeight||architectureCanvas.offsetHeight;
+        diagramZoom=Math.max(.35,Math.min(1.15,Math.min(availableW/contentW,availableH/contentH)));
+        applyDiagramZoom();
+        architectureCanvas.scrollTo({left:0,top:0,behavior:"smooth"});
+    }
+    $("fitDiagramButton").addEventListener("click",fitDiagramToScreen);
+    $("zoomInButton").addEventListener("click",()=>{diagramZoom=Math.min(1.6,diagramZoom+.1);applyDiagramZoom();});
+    $("zoomOutButton").addEventListener("click",()=>{diagramZoom=Math.max(.35,diagramZoom-.1);applyDiagramZoom();});
+    $("autoLayoutButton").addEventListener("click", async () => {
+        const btn = $("autoLayoutButton");
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Laying out...";
+        currentPositions = {};
+        renderCanvas();
+        try {
+            await savePositionsImmediately();
+            showMessage("Auto Layout applied and saved.");
+            btn.textContent = "Done";
+            setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1000);
+        } catch (error) {
+            showMessage(`Layout applied but could not be saved: ${error.message}`, true);
+            btn.textContent = original;
+            btn.disabled = false;
+        }
+    });
+    $("saveLayoutButton").addEventListener("click", async () => {
+        const btn = $("saveLayoutButton");
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        try {
+            await savePositionsImmediately();
+            showMessage("Layout saved.");
+            btn.textContent = "Saved";
+            setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+        } catch (error) {
+            showMessage(`Could not save layout: ${error.message}`, true);
+            btn.textContent = original;
+            btn.disabled = false;
+            alert("Save failed: " + error.message);
+        }
+    });
+    $("presentationButton").addEventListener("click",()=>{document.body.classList.add("presentation-mode");setTimeout(fitDiagramToScreen,80);});
+    $("presentationExitButton").addEventListener("click",()=>{document.body.classList.remove("presentation-mode");diagramZoom=1;applyDiagramZoom();});
+    document.addEventListener("keydown",event=>{if(event.key==="Escape"&&document.body.classList.contains("presentation-mode")){document.body.classList.remove("presentation-mode");diagramZoom=1;applyDiagramZoom();}});
 
     async function initializeWorkspace() {
         try {
